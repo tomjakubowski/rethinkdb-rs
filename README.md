@@ -1,6 +1,9 @@
 # restink
 
-rust client driver for rethinkdb in progress.
+Rust client driver for [RethinkDB][] in progress.  Targeting the
+1.13.x release of RethinkDB, currently on the [`next` branch][], and
+its new JSON client API.  restink will not work with earlier versions
+of RethinkDB.
 
 ## disclaimer
 
@@ -9,3 +12,6 @@ rust client driver for rethinkdb in progress.
 > it stinks!
 
 use at your own peril.
+
+[rethinkdb]: http://www.rethinkdb.com/
+[`next` branch]: https://github.com/rethinkdb/rethinkdb/tree/next
