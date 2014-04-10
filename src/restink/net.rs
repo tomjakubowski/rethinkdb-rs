@@ -1,14 +1,13 @@
 use std::fmt;
 
-use std::io::{IoResult, IoError};
+use std::io::{BufferedStream, IoResult, IoError};
 use std::io::net::tcp::{TcpStream};
 use std::io::net::ip::{SocketAddr};
 
 static magic_number: i32 = 0x5e72273a;
 
 pub struct Connection {
-    // TODO: wrap in BufferedStream
-    stream: TcpStream
+    stream: BufferedStream<TcpStream>
 }
 
 impl fmt::Show for Connection {
@@ -51,13 +50,15 @@ pub fn connect(address: SocketAddr) -> IoResult<Connection> {
     use std::str;
 
     let stream = try!(TcpStream::connect(address));
-    let mut conn = Connection { stream: stream };
+    let mut conn = Connection { stream: BufferedStream::new(stream) };
     try!(conn.write_handshake());
+    try!(conn.stream.flush());
     let response = try!(conn.read_to_null());
     match str::from_utf8(response) {
         Some("SUCCESS") => {
             println!("connected + shook hands! :)");
         },
+        // FIXME: should restink have its own Result + Error types?
         Some(other) => {
             let desc = "RethinkDB Handshake Error";
             return Err(other_io_error(desc, Some(other.into_owned())));
