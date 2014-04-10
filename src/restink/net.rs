@@ -16,12 +16,6 @@ impl fmt::Show for Connection {
     }
 }
 
-impl Drop for Connection {
-    fn drop(&mut self) {
-        println!("conn going out of scope!");
-    }
-}
-
 impl Connection {
     // like read_to_end, but stops when a 0 is read.
     fn read_to_null(&mut self) -> IoResult<~[u8]> {
