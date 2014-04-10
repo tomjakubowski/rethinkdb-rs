@@ -4,7 +4,7 @@ use std::io::{BufferedStream, IoResult, IoError};
 use std::io::net::tcp::{TcpStream};
 use std::io::net::ip::{SocketAddr};
 
-static magic_number: i32 = 0x5e72273a;
+static magic_number: i32 = 0x5e72273a; // V0_2_JSON
 
 pub struct Connection {
     stream: BufferedStream<TcpStream>
@@ -49,9 +49,7 @@ pub fn connect(address: SocketAddr) -> IoResult<Connection> {
     try!(conn.stream.flush());
     let response = try!(conn.read_to_null());
     match str::from_utf8(response) {
-        Some("SUCCESS") => {
-            println!("connected + shook hands! :)");
-        },
+        Some("SUCCESS") => { },
         // FIXME: should restink have its own Result + Error types?
         Some(other) => {
             let desc = "RethinkDB Handshake Error";
