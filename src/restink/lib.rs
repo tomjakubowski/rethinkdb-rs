@@ -1,6 +1,8 @@
 #![crate_id="restink#0.1.0"]
 #![crate_type="lib"]
 
+pub use connect = net::connect;
+
 // this unfortunately interacts poorly with flycheck. maybe patch
 // flycheck to allow a buffer-local override of the file to check with
 // rustc --no-trans (e.g. the file containing the crate root)?
