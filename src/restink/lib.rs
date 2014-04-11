@@ -2,7 +2,7 @@
 #![crate_type="lib"]
 
 extern crate collections;
-pub use connect = net::connect;
+pub use net::{connect, Connection};
 
 // this unfortunately interacts poorly with flycheck. maybe patch
 // flycheck to allow a buffer-local override of the file to check with
