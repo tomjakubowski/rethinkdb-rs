@@ -4,7 +4,6 @@
 extern crate collections;
 pub use net::{connect, Connection};
 
-mod datum;
 mod net;
 
 #[cfg(test)]
