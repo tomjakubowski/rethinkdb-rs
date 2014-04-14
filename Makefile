@@ -1,3 +1,4 @@
+RUSTBINDIR = bin
 RUSTCRATES = restink restink-example
 
 restink-example_CRATE_DEPS += restink
