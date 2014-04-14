@@ -4,14 +4,8 @@
 extern crate collections;
 pub use net::{connect, Connection};
 
-// this unfortunately interacts poorly with flycheck. maybe patch
-// flycheck to allow a buffer-local override of the file to check with
-// rustc --no-trans (e.g. the file containing the crate root)?
-// #![feature(phase)] #[phase(syntax, link)]
-// extern crate log;
-
+mod datum;
 mod net;
-mod protocol;
 
 #[cfg(test)]
 mod test;

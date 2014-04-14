@@ -1,5 +1,6 @@
 extern crate collections;
 use collections::HashMap;
+
 pub type AssocPair<T> = HashMap<~str, T>;
 
 // todo: phantom types?
