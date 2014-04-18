@@ -1,5 +1,7 @@
 # restink
 
+[![Build Status](https://travis-ci.org/tomjakubowski/restink.svg?branch=master)](https://travis-ci.org/tomjakubowski/restink)
+
 Rust client driver for [RethinkDB][] in progress.  Targeting the
 1.13.x release of RethinkDB, currently on the [`next` branch][], and
 its new JSON client API.  restink will not work with earlier versions
