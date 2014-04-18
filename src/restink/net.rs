@@ -17,6 +17,19 @@ impl fmt::Show for Connection {
 }
 
 impl Connection {
+    pub fn execute_raw(&mut self, query: &[u8]) -> IoResult<~[u8]> {
+        let buf: ~[u8] = query.clone().to_owned();
+        let send_size = buf.len().to_i32().unwrap();
+        try!(self.stream.write_le_i32(send_size));
+        try!(self.stream.write(buf));
+        try!(self.stream.flush());
+
+        let _token = try!(self.stream.read_le_i64());
+
+        let recv_size = try!(self.stream.read_le_i32());
+        self.stream.read_exact(recv_size.to_uint().unwrap())
+    }
+
     // like read_to_end, but stops when a 0 is read.
     fn read_to_null(&mut self) -> IoResult<~[u8]> {
         let mut buf = ~[];
@@ -27,6 +40,7 @@ impl Connection {
         }
         Ok(buf)
     }
+
     fn write_handshake(&mut self) -> IoResult<()> {
         // TODO: actually accept an optional authorization key
         let api_key_len = 0;
