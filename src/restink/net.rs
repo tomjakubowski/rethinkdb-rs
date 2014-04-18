@@ -17,7 +17,7 @@ impl fmt::Show for Connection {
 }
 
 impl Connection {
-    pub fn execute_raw(&mut self, query: &[u8]) -> IoResult<~[u8]> {
+    pub fn execute_raw(&mut self, query: &[u8]) -> IoResult<Vec<u8>> {
         let buf: ~[u8] = query.clone().to_owned();
         let send_size = buf.len().to_i32().unwrap();
         try!(self.stream.write_le_i32(send_size));

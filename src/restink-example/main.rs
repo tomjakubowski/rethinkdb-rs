@@ -2,6 +2,7 @@
 #![crate_type="bin"]
 
 extern crate restink;
+extern crate serialize;
 
 use std::io::net::ip::SocketAddr;
 
@@ -15,7 +16,9 @@ pub fn main() {
     let res = conn.execute_raw(buf.into_bytes());
 
     match res {
-        Ok(buf) => { println!("got res {}", str::from_utf8(buf).unwrap()); },
+        Ok(buf) => {
+            println!("got res {}", str::from_utf8(buf.as_slice()).unwrap());
+        },
         _ => { println!("error :("); }
     }
 }
