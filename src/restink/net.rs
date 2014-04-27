@@ -4,7 +4,8 @@ use std::io::{BufferedStream, IoResult, IoError};
 use std::io::net::tcp::{TcpStream};
 use std::io::net::ip::{SocketAddr};
 
-static magic_number: i32 = 0x5e72273a; // V0_2_JSON
+static version_magic_number: i32 = 0x5f75e83e; // V0_3
+static protocol_magic_number: i32 = 0x7e6970c7; // JSON
 
 pub struct Connection {
     stream: BufferedStream<TcpStream>
@@ -19,8 +20,11 @@ impl fmt::Show for Connection {
 impl Connection {
     pub fn execute_raw(&mut self, query: &[u8]) -> IoResult<Vec<u8>> {
         let buf: ~[u8] = query.clone().to_owned();
-        let send_size = buf.len().to_i32().unwrap();
-        try!(self.stream.write_le_i32(send_size));
+        let token = 666;
+        let query_size = buf.len().to_i32().unwrap();
+
+        try!(self.stream.write_le_i64(token));
+        try!(self.stream.write_le_i32(query_size));
         try!(self.stream.write(buf));
         try!(self.stream.flush());
 
@@ -44,8 +48,9 @@ impl Connection {
     fn write_handshake(&mut self) -> IoResult<()> {
         // TODO: actually accept an optional authorization key
         let api_key_len = 0;
-        try!(self.stream.write_le_i32(magic_number));
-        self.stream.write_le_i32(api_key_len)
+        try!(self.stream.write_le_i32(version_magic_number));
+        try!(self.stream.write_le_i32(api_key_len));
+        self.stream.write_le_i32(protocol_magic_number)
     }
 }
 
