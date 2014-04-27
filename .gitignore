@@ -1,3 +1,4 @@
 /.rust
 /bin/
 /lib/
+/rethinkdb_data/
