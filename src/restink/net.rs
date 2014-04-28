@@ -1,5 +1,9 @@
+extern crate collections;
 extern crate serialize;
 
+use collections::TreeMap;
+
+use serialize::json;
 use serialize::json::{Json};
 
 use std::fmt;
@@ -21,10 +25,33 @@ impl fmt::Show for Connection {
 }
 
 impl Connection {
-    pub fn execute_json(&mut self, json: ~Json) -> IoResult<Vec<u8>> {
+    pub fn execute_json(&mut self, json: Json) -> IoResult<Vec<u8>> {
         let json_strbuf = json.to_str().to_strbuf();
         self.execute_raw(json_strbuf.as_bytes())
     }
+
+    pub fn run(&mut self, term: json::Json) {
+        use j = serialize::json;
+        use std::str;
+
+        let mut global_optargs = ~TreeMap::new();
+        global_optargs.insert(~"db", j::List(~[j::Number(14.),
+                                               j::List(~[j::String(~"test")])]));
+        let global_optargs = j::Object(global_optargs);
+
+        let query = j::List(~[j::Number(1.), term, global_optargs]);
+
+        println!("executing {}", query);
+        let res = self.execute_json(query);
+
+        match res {
+            Ok(buf) => {
+                println!("got res {}", str::from_utf8(buf.as_slice()).unwrap());
+            },
+            _ => { println!("error :("); }
+        }
+    }
+
 
     fn execute_raw(&mut self, query: &[u8]) -> IoResult<Vec<u8>> {
         let buf: ~[u8] = query.clone().to_owned();
