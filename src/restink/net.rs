@@ -1,5 +1,8 @@
-use std::fmt;
+extern crate serialize;
 
+use serialize::json::{Json};
+
+use std::fmt;
 use std::io::{BufferedStream, IoResult, IoError};
 use std::io::net::tcp::{TcpStream};
 use std::io::net::ip::{SocketAddr};
@@ -18,7 +21,12 @@ impl fmt::Show for Connection {
 }
 
 impl Connection {
-    pub fn execute_raw(&mut self, query: &[u8]) -> IoResult<Vec<u8>> {
+    pub fn execute_json(&mut self, json: ~Json) -> IoResult<Vec<u8>> {
+        let json_strbuf = json.to_str().to_strbuf();
+        self.execute_raw(json_strbuf.as_bytes())
+    }
+
+    fn execute_raw(&mut self, query: &[u8]) -> IoResult<Vec<u8>> {
         let buf: ~[u8] = query.clone().to_owned();
         let token = 666;
         let query_size = buf.len().to_i32().unwrap();
