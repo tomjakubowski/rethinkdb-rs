@@ -36,7 +36,7 @@ impl Connection {
         try!(self.stream.write(buf));
         try!(self.stream.flush());
 
-        let _token = try!(self.stream.read_le_i64());
+        let _recv_token = try!(self.stream.read_le_i64());
 
         let recv_size = try!(self.stream.read_le_i32());
         self.stream.read_exact(recv_size.to_uint().unwrap())

@@ -16,15 +16,15 @@ pub fn main() {
     let addr = from_str::<SocketAddr>("127.0.0.1:28015").expect("your address is garbage");
     let mut conn = restink::connect(addr).unwrap();
 
-    let mut optargs = ~TreeMap::new();
-    optargs.insert(~"db", j::List(~[j::Number(14.),
-                                    j::List(~[j::String(~"test")])]));
-    let optargs = j::Object(optargs);
+    let mut global_optargs = ~TreeMap::new();
+    global_optargs.insert(~"db", j::List(~[j::Number(14.),
+                                           j::List(~[j::String(~"test")])]));
+    let global_optargs = j::Object(global_optargs);
 
-    let args = j::List(~[j::Number(62.), j::List(~[])]);
-    let query = ~j::List(~[j::Number(1.), args, optargs]);
+    let term = j::List(~[j::Number(62.), j::List(~[])]);
+    let query = ~j::List(~[j::Number(1.), term, global_optargs]);
 
-    // let buf = ~"[1,[62,[]],{\"db\":[14,[\"test\"]]}]";
+    println!("executing {}", query);
     let res = conn.execute_json(query);
 
     match res {
