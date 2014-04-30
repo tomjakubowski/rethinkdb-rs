@@ -107,17 +107,19 @@ mod test {
     fn test_raw_response_from_json() {
         let json = json::from_str(r#"{"t": 1, "r": [["bar","foo"]]}"#).unwrap();
         let raw_res = RawResponse::from_json(json).unwrap();
-        let tables = json::List(~[json::String(~"bar"), json::String(~"foo")]);
+        let tables = json::List(box [json::String("bar".to_owned()),
+                                     json::String("foo".to_owned())]);
 
         assert_eq!(raw_res.res_type, 1);
-        assert_eq!(raw_res.res, json::List(~[tables]));
+        assert_eq!(raw_res.res, json::List(box [tables]));
     }
 
     #[test]
     fn test_success_from_json() {
         let json = json::from_str(r#"{"t": 1, "r": [["bar","foo"]]}"#).unwrap();
         let res = Response::from_json(json).unwrap();
-        let tables = json::List(~[json::String(~"bar"), json::String(~"foo")]);
+        let tables = json::List(box [json::String("bar".to_owned()),
+                                     json::String("foo".to_owned())]);
 
         let (kind, values) = match res {
             Success { kind: kind, values: values } => (kind, values),
@@ -125,6 +127,6 @@ mod test {
         };
 
         assert_eq!(kind, SuccessComplete);
-        assert_eq!(values, json::List(~[tables]));
+        assert_eq!(values, json::List(box [tables]));
     }
 }

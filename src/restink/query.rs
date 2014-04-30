@@ -40,8 +40,8 @@ impl Database {
 }
 
 pub fn db(name: &str) -> Database {
-    let args = json::List(~[name.to_owned().to_json()]);
-    Database { term: json::List(~[term::Db.to_json(), args]) }
+    let args = json::List(box [name.to_owned().to_json()]);
+    Database { term: json::List(box [term::Db.to_json(), args]) }
 }
 
 mod internal {
@@ -54,37 +54,37 @@ mod internal {
         // build_args!(name, db, ...) =>
         let args = match db {
             Some(database) => {
-                j::List(~[database.term, name.to_owned().to_json()])
+                j::List(box [database.term, name.to_owned().to_json()])
             },
             None => {
-                j::List(~[name.to_owned().to_json()])
+                j::List(box [name.to_owned().to_json()])
             }
         };
-        j::List(~[term::TableCreate.to_json(), args])
+        j::List(box [term::TableCreate.to_json(), args])
     }
 
     pub fn table_drop(name: &str, db: Option<Database>) -> j::Json {
         let args = match db {
             Some(database) => {
-                j::List(~[database.term, name.to_owned().to_json()])
+                j::List(box [database.term, name.to_owned().to_json()])
             },
             None => {
-                j::List(~[name.to_owned().to_json()])
+                j::List(box [name.to_owned().to_json()])
             }
         };
-        j::List(~[term::TableDrop.to_json(), args])
+        j::List(box [term::TableDrop.to_json(), args])
     }
 
     pub fn table_list(db: Option<Database>) -> j::Json {
         let args = match db {
             Some(database) => {
-                j::List(~[database.term])
+                j::List(box [database.term])
             },
             None => {
-                j::List(~[])
+                j::List(box [])
             }
         };
-        j::List(~[term::TableList.to_json(), args])
+        j::List(box [term::TableList.to_json(), args])
     }
 }
 
