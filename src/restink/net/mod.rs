@@ -1,3 +1,5 @@
+#![feature(struct_variant)]
+
 extern crate collections;
 extern crate serialize;
 
@@ -10,6 +12,9 @@ use std::fmt;
 use std::io::{BufferedStream, IoResult, IoError};
 use std::io::net::tcp::{TcpStream};
 use std::io::net::ip::{SocketAddr};
+pub use Response = self::response::Response;
+
+mod response;
 
 static version_magic_number: i32 = 0x5f75e83e; // V0_3
 static protocol_magic_number: i32 = 0x7e6970c7; // JSON
@@ -25,12 +30,7 @@ impl fmt::Show for Connection {
 }
 
 impl Connection {
-    pub fn execute_json(&mut self, json: Json) -> IoResult<Vec<u8>> {
-        let json_strbuf = json.to_str().to_strbuf();
-        self.execute_raw(json_strbuf.as_bytes())
-    }
-
-    pub fn run(&mut self, term: json::Json) {
+    pub fn run(&mut self, term: json::Json) -> IoResult<Response> {
         use j = serialize::json;
         use std::str;
 
@@ -41,17 +41,18 @@ impl Connection {
 
         let query = j::List(~[j::Number(1.), term, global_optargs]);
 
-        println!("executing {}", query);
-        let res = self.execute_json(query);
+        let res = try!(self.execute_json(query).map(|buf| {
+            let str_res = str::from_utf8(buf.as_slice()).unwrap();
+            json::from_str(str_res).unwrap()
+        }));
 
-        match res {
-            Ok(buf) => {
-                println!("got res {}", str::from_utf8(buf.as_slice()).unwrap());
-            },
-            _ => { println!("error :("); }
-        }
+        Ok(Response::from_json(res).expect("unrecognized response from RDB server"))
     }
 
+    pub fn execute_json(&mut self, json: Json) -> IoResult<Vec<u8>> {
+        let json_strbuf = json.to_str().to_strbuf();
+        self.execute_raw(json_strbuf.as_bytes())
+    }
 
     fn execute_raw(&mut self, query: &[u8]) -> IoResult<Vec<u8>> {
         let buf: ~[u8] = query.clone().to_owned();

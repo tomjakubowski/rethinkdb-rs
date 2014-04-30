@@ -10,9 +10,10 @@ pub fn main() {
     let addr = from_str::<SocketAddr>("127.0.0.1:28015").expect("your address is garbage");
     let mut conn = restink::connect(addr).unwrap();
 
-    conn.run(r::db("test").table_list());
-    conn.run(r::db("test").table_create("HELLO"));
-    conn.run(r::db("test").table_list());
-    conn.run(r::db("test").table_drop("HELLO"));
-    conn.run(r::db("test").table_list());
+    println!("{}", conn.run(r::db("test").table_list()));
+    println!("{}", conn.run(r::db("test").table_create("HELLO")));
+    println!("{}", conn.run(r::db("test").table_list()));
+    println!("{}", conn.run(r::db("test").table_drop("HELLO")));
+    println!("{}", conn.run(r::db("test").table_list()));
+    println!("{}", conn.run(r::db("testing").table_list()));
 }
