@@ -6,11 +6,14 @@ extern crate serialize;
 extern crate collections;
 
 use serialize::json;
+// use serialize::{Decodable, Decoder};
+
+pub type RdbResult<A> = Result<A, RdbError>;
 
 #[deriving(Show, Eq)]
-pub enum SuccessKind {
-    SuccessComplete,
-    SuccessPartial
+pub enum ResponseKind {
+    ResponseComplete,
+    ResponsePartial
 }
 
 #[deriving(Show, Eq)]
@@ -26,10 +29,14 @@ struct RawResponse {
     res: json::Json
 }
 
+// argh, could have done this instead
+// impl Decodable<json::Decoder, json::Error> for RawResponse {
+// }
+
 impl RawResponse {
-    pub fn from_json(json: json::Json) -> Option<RawResponse> {
+    pub fn from_json(json: json::Json) -> RdbResult<RawResponse> {
         let mut map: json::Object = match json.as_object() {
-            None => { return None; },
+            None => fail!("FIXME"),
             Some(x) => x.clone()
         };
 
@@ -37,63 +44,70 @@ impl RawResponse {
                       map.pop(&"r".to_owned()));
         match values {
             (Some(t), Some(r)) => {
-                Some(RawResponse {
+                Ok(RawResponse {
                     res_type: t as int,
                     res: r
                 })
             },
-            _ => None
+            _ => fail!("FIXME")
         }
     }
 }
 
 #[deriving(Show)]
-pub enum Response {
-    Error { kind: ErrorKind, message: ~str },
-    Success { kind: SuccessKind, values: json::Json }
+pub struct Response {
+    kind: ResponseKind,
+    values: json::Json
 }
 
 impl Response {
-    pub fn from_json(json: json::Json) -> Option<Response> {
+    pub fn from_json(json: json::Json) -> RdbResult<Response> {
         RawResponse::from_json(json).and_then(|raw: RawResponse| {
-            Some(match raw.res_type {
+            match raw.res_type {
                 1 | 2 => {
-                    Response::new_success(SuccessComplete, raw.res)
+                    Ok(Response::new(ResponseComplete, raw.res))
                 },
                 3 => {
-                    Response::new_success(SuccessPartial, raw.res)
+                    Ok(Response::new(ResponsePartial, raw.res))
                 },
                 16 => {
-                    Response::new_error(ClientError, raw.res)
+                    Err(new_error(ClientError, raw.res))
                 },
                 17 => {
-                    Response::new_error(CompileError, raw.res)
+                    Err(new_error(CompileError, raw.res))
                 },
                 18 => {
-                    Response::new_error(RuntimeError, raw.res)
+                    Err(new_error(RuntimeError, raw.res))
                 }
-                _ => { return None }
-            })
+                _ => { fail!("FIXME") }
+            }
         })
     }
 
-    fn new_error(kind: ErrorKind, res: json::Json) -> Response {
-        let msgs = res.as_list().expect(format!("couldn't get error message from {}", res));
-        let msg = match msgs.as_slice() {
-            [json::String(ref x)] => { x.to_owned() },
-            _ => fail!(format!("couldn't get error message from {}", res))
-        };
-        Error {
-            kind: kind,
-            message: msg
-        }
-    }
-
-    fn new_success(kind: SuccessKind, res: json::Json) -> Response {
-        Success {
+    fn new(kind: ResponseKind, res: json::Json) -> Response {
+        Response {
             kind: kind,
             values: res
         }
+    }
+}
+
+#[deriving(Show)]
+pub struct RdbError {
+    kind: ErrorKind,
+    desc: ~str
+}
+
+fn new_error(kind: ErrorKind, res: json::Json) -> RdbError {
+    // todo: remove failures, instead return an RdbError
+    let msgs = res.as_list().expect(format!("couldn't get error message from {}", res));
+    let msg = match msgs.as_slice() {
+        [json::String(ref x)] => { x.to_owned() },
+        _ => fail!(format!("couldn't get error message from {}", res))
+    };
+    RdbError {
+        kind: kind,
+        desc: msg
     }
 }
 
@@ -101,7 +115,7 @@ impl Response {
 mod test {
     use serialize::json;
 
-    use super::{RawResponse, Response, Success, SuccessComplete};
+    use super::{RawResponse, Response, ResponseComplete};
 
     #[test]
     fn test_raw_response_from_json() {
@@ -121,12 +135,9 @@ mod test {
         let tables = json::List(box [json::String("bar".to_owned()),
                                      json::String("foo".to_owned())]);
 
-        let (kind, values) = match res {
-            Success { kind: kind, values: values } => (kind, values),
-            _ => { fail!("the test is bad!") }
-        };
+        let Response { kind: kind, values: values } = res;
 
-        assert_eq!(kind, SuccessComplete);
+        assert_eq!(kind, ResponseComplete);
         assert_eq!(values, json::List(box [tables]));
     }
 }

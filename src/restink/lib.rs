@@ -6,7 +6,7 @@
 extern crate collections;
 extern crate serialize;
 
-pub use net::{connect, Connection, Response};
+pub use net::{connect, Connection, RdbResult};
 
 mod net;
 pub mod query;

@@ -12,7 +12,10 @@ use std::fmt;
 use std::io::{BufferedStream, IoResult, IoError};
 use std::io::net::tcp::{TcpStream};
 use std::io::net::ip::{SocketAddr};
+pub use RdbResult = self::response::RdbResult;
+pub use RdbError = self::response::RdbError;
 pub use Response = self::response::Response;
+pub use ResponseKind = self::response::ResponseKind;
 
 mod response;
 
@@ -30,7 +33,9 @@ impl fmt::Show for Connection {
 }
 
 impl Connection {
-    pub fn run(&mut self, term: json::Json) -> IoResult<Response> {
+    // FIXME: this signature should be RdbResult<something>, with Io errors
+    // rolled into the RdbError type.
+    pub fn run(&mut self, term: json::Json) -> IoResult<RdbResult<Response>> {
         use j = serialize::json;
         use std::str;
 
@@ -46,7 +51,7 @@ impl Connection {
             json::from_str(str_res).unwrap()
         }));
 
-        Ok(Response::from_json(res).expect("unrecognized response from RDB server"))
+        Ok(Response::from_json(res)) // .expect("unrecognized response from RDB server"))
     }
 
     pub fn execute_json(&mut self, json: Json) -> IoResult<Vec<u8>> {
