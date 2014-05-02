@@ -5,22 +5,44 @@ extern crate serialize;
 #[cfg(test)]
 extern crate collections;
 
-use serialize::json;
-// use serialize::{Decodable, Decoder};
+use std::io;
 
-pub type RdbResult<A> = Result<A, RdbError>;
+use serialize::json;
+
+pub type RdbResult<A> = Result<A, Error>;
+
+#[deriving(Show)]
+pub enum Error {
+    ClientError(~str),
+    CompileError(~str),
+    RuntimeError(~str),
+    ProtocolError(~str),
+    IoError(io::IoError)
+}
+
+impl Error {
+    pub fn new(kind: int, res: json::Json) -> Error {
+        let msgs = res.as_list();
+        let msg = match msgs.map(|x| x.as_slice()) {
+            Some([json::String(ref x)]) => x.to_owned(),
+            _ => {
+                return ProtocolError(format!("couldn't find error message in {}", res));
+            }
+        };
+
+        match kind {
+            16 => ClientError(msg),
+            17 => CompileError(msg),
+            18 => RuntimeError(msg),
+            _ => ProtocolError(format!("unrecognized error number: {}", kind))
+        }
+    }
+}
 
 #[deriving(Show, Eq)]
 pub enum ResponseKind {
     ResponseComplete,
     ResponsePartial
-}
-
-#[deriving(Show, Eq)]
-pub enum ErrorKind {
-    ClientError,
-    CompileError,
-    RuntimeError
 }
 
 #[deriving(Show)]
@@ -29,12 +51,8 @@ struct RawResponse {
     res: json::Json
 }
 
-// argh, could have done this instead
-// impl Decodable<json::Decoder, json::Error> for RawResponse {
-// }
-
 impl RawResponse {
-    pub fn from_json(json: json::Json) -> RdbResult<RawResponse> {
+    fn from_json(json: json::Json) -> RdbResult<RawResponse> {
         let mut map: json::Object = match json.as_object() {
             None => fail!("FIXME"),
             Some(x) => x.clone()
@@ -64,22 +82,9 @@ impl Response {
     pub fn from_json(json: json::Json) -> RdbResult<Response> {
         RawResponse::from_json(json).and_then(|raw: RawResponse| {
             match raw.res_type {
-                1 | 2 => {
-                    Ok(Response::new(ResponseComplete, raw.res))
-                },
-                3 => {
-                    Ok(Response::new(ResponsePartial, raw.res))
-                },
-                16 => {
-                    Err(new_error(ClientError, raw.res))
-                },
-                17 => {
-                    Err(new_error(CompileError, raw.res))
-                },
-                18 => {
-                    Err(new_error(RuntimeError, raw.res))
-                }
-                _ => { fail!("FIXME") }
+                1 | 2 => Ok(Response::new(ResponseComplete, raw.res)),
+                3 => Ok(Response::new(ResponsePartial, raw.res)),
+                n => Err(Error::new(n, raw.res))
             }
         })
     }
@@ -89,25 +94,6 @@ impl Response {
             kind: kind,
             values: res
         }
-    }
-}
-
-#[deriving(Show)]
-pub struct RdbError {
-    kind: ErrorKind,
-    desc: ~str
-}
-
-fn new_error(kind: ErrorKind, res: json::Json) -> RdbError {
-    // todo: remove failures, instead return an RdbError
-    let msgs = res.as_list().expect(format!("couldn't get error message from {}", res));
-    let msg = match msgs.as_slice() {
-        [json::String(ref x)] => { x.to_owned() },
-        _ => fail!(format!("couldn't get error message from {}", res))
-    };
-    RdbError {
-        kind: kind,
-        desc: msg
     }
 }
 

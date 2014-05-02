@@ -6,9 +6,9 @@
 extern crate collections;
 extern crate serialize;
 
-pub use net::{connect, Connection, RdbResult};
+pub use net::{connect};
 
-mod net;
+pub mod net;
 pub mod query;
 
 #[cfg(test)]

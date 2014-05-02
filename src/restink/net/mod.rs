@@ -9,11 +9,12 @@ use serialize::json;
 use serialize::json::{Json};
 
 use std::fmt;
-use std::io::{BufferedStream, IoResult, IoError};
+use std::io::{BufferedStream, IoResult};
 use std::io::net::tcp::{TcpStream};
 use std::io::net::ip::{SocketAddr};
+
+pub use Error = self::response::Error;
 pub use RdbResult = self::response::RdbResult;
-pub use RdbError = self::response::RdbError;
 pub use Response = self::response::Response;
 pub use ResponseKind = self::response::ResponseKind;
 
@@ -33,9 +34,7 @@ impl fmt::Show for Connection {
 }
 
 impl Connection {
-    // FIXME: this signature should be RdbResult<something>, with Io errors
-    // rolled into the RdbError type.
-    pub fn run(&mut self, term: json::Json) -> IoResult<RdbResult<Response>> {
+    pub fn run(&mut self, term: json::Json) -> RdbResult<Response> {
         use j = serialize::json;
         use std::str;
 
@@ -46,15 +45,17 @@ impl Connection {
 
         let query = j::List(box [j::Number(1.), term, global_optargs]);
 
-        let res = try!(self.execute_json(query).map(|buf| {
+        let res = self.execute_json(query).map(|buf| {
             let str_res = str::from_utf8(buf.as_slice()).unwrap();
             json::from_str(str_res).unwrap()
-        }));
+        });
 
-        Ok(Response::from_json(res)) // .expect("unrecognized response from RDB server"))
+        let res = res.or_else(|e| Err(response::IoError(e)));
+
+        res.and_then(|r| Response::from_json(r))
     }
 
-    pub fn execute_json(&mut self, json: Json) -> IoResult<Vec<u8>> {
+    fn execute_json(&mut self, json: Json) -> IoResult<Vec<u8>> {
         let json_strbuf = json.to_str().to_strbuf();
         self.execute_raw(json_strbuf.as_bytes())
     }
@@ -93,32 +94,39 @@ impl Connection {
         try!(self.stream.write_le_i32(api_key_len));
         self.stream.write_le_i32(protocol_magic_number)
     }
+
+    fn read_handshake_reply(&mut self) -> IoResult<Vec<u8>> {
+        try!(self.stream.flush());
+        self.read_to_null()
+    }
 }
 
-fn other_io_error(desc: &'static str, detail: Option<~str>) -> IoError {
-    use std::io;
-    IoError { kind: io::OtherIoError, desc: desc, detail: detail }
-}
-
-pub fn connect(address: SocketAddr) -> IoResult<Connection> {
+pub fn connect(address: SocketAddr) -> RdbResult<Connection> {
+    use self::response::ProtocolError;
     use std::str;
 
-    let stream = try!(TcpStream::connect(address));
-    let mut conn = Connection { stream: BufferedStream::new(stream) };
-    try!(conn.write_handshake());
-    try!(conn.stream.flush());
-    let response = try!(conn.read_to_null());
+    fn make_conn(address: SocketAddr) -> IoResult<Connection> {
+        let stream = try!(TcpStream::connect(address));
+        Ok(Connection { stream: BufferedStream::new(stream) })
+    }
+
+    fn shake_hands(conn: &mut Connection) -> IoResult<Vec<u8>> {
+        try!(conn.write_handshake());
+        conn.read_handshake_reply()
+    }
+
+    let mut conn = try!(make_conn(address).or_else(|e| {
+        Err(response::IoError(e))
+    }));
+
+    let response = try!(shake_hands(&mut conn).or_else(|e| {
+        Err(response::IoError(e))
+    }));
+
     match str::from_utf8(response.as_slice()) {
         Some("SUCCESS") => { },
-        // FIXME: should restink have its own Result + Error types?
-        Some(other) => {
-            let desc = "RethinkDB Handshake Error";
-            return Err(other_io_error(desc, Some(other.into_owned())));
-        },
-        None => {
-            let desc = "RethinkDB Handshake Error";
-            let detail = "couldn't read response as UTF-8 string".to_owned();
-            return Err(other_io_error(desc, Some(detail)));
+        _ => {
+            return Err(ProtocolError("handshake error".to_owned()));
         }
     };
     Ok(conn)
