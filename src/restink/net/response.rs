@@ -53,21 +53,15 @@ struct RawResponse {
 
 impl RawResponse {
     fn from_json(json: json::Json) -> RdbResult<RawResponse> {
-        let mut map: json::Object = match json.as_object() {
-            None => fail!("FIXME"),
-            Some(x) => x.clone()
-        };
+        let values = (json.find(&"t".to_owned()).and_then(|x| x.as_number()),
+                      json.find(&"r".to_owned()));
 
-        let values = (map.pop(&"t".to_owned()).and_then(|x| x.as_number()),
-                      map.pop(&"r".to_owned()));
         match values {
-            (Some(t), Some(r)) => {
-                Ok(RawResponse {
-                    res_type: t as int,
-                    res: r
-                })
-            },
-            _ => fail!("FIXME")
+            (Some(t), Some(r)) => Ok(RawResponse { res_type: t as int, res: r.clone() }),
+            _ => {
+                let msg = format!("JSON decoding error: {}", json);
+                return Err(ProtocolError(msg));
+            }
         }
     }
 }
