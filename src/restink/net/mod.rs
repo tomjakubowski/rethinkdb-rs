@@ -50,7 +50,7 @@ impl Connection {
             json::from_str(str_res).unwrap()
         });
 
-        let res = res.or_else(|e| Err(response::IoError(e)));
+        let res = res.map_err(|e| response::IoError(e));
 
         res.and_then(|r| Response::from_json(r))
     }
@@ -115,13 +115,8 @@ pub fn connect(address: SocketAddr) -> RdbResult<Connection> {
         conn.read_handshake_reply()
     }
 
-    let mut conn = try!(make_conn(address).or_else(|e| {
-        Err(response::IoError(e))
-    }));
-
-    let response = try!(shake_hands(&mut conn).or_else(|e| {
-        Err(response::IoError(e))
-    }));
+    let mut conn = try!(make_conn(address).map_err(|e| { response::IoError(e) }));
+    let response = try!(shake_hands(&mut conn).map_err(|e| { response::IoError(e) }));
 
     match str::from_utf8(response.as_slice()) {
         Some("SUCCESS") => { },
