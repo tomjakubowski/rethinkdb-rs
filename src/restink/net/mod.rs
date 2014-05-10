@@ -39,11 +39,11 @@ impl Connection {
         use std::str;
 
         let mut global_optargs = box TreeMap::new();
-        global_optargs.insert("db".to_owned(), j::List(box [j::Number(14.),
-                                               j::List(box [j::String("test".to_owned())])]));
+        global_optargs.insert("db".to_owned(), j::List(vec![j::Number(14.),
+                                               j::List(vec![j::String("test".to_owned())])]));
         let global_optargs = j::Object(global_optargs);
 
-        let query = j::List(box [j::Number(1.), term, global_optargs]);
+        let query = j::List(vec![j::Number(1.), term, global_optargs]);
 
         let res = self.execute_json(query).map(|buf| {
             let str_res = str::from_utf8(buf.as_slice()).unwrap();
