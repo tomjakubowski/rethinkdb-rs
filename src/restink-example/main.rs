@@ -9,6 +9,8 @@ use collections::TreeMap;
 use serialize::json;
 use serialize::json::ToJson;
 
+use restink::Runnable;
+
 #[deriving(Decodable, Encodable, Show)]
 struct Employee {
     id: Option<StrBuf>,
@@ -38,11 +40,13 @@ pub fn main() {
 
     let bob = Employee::new("Bob");
 
-    println!("{}", conn.run(r::db("test").table_list()));
-    println!("{}", conn.run(r::db("test").table_create("employees")));
+    println!("{}", r::db("test").table_list().run(&mut conn));
 
-    println!("{}", conn.run(r::db("test").table("employees").insert(bob.to_json())));
-    println!("{}", conn.run(r::db("test").table("employees").term));
-    println!("{}", conn.run(r::db("test").table_drop("employees")));
-    println!("{}", conn.run(r::db("testing").table_list()));
+    println!("{}", r::db("test").table_list().run(&mut conn));
+    println!("{}", r::db("test").table_create("employees").run(&mut conn));
+
+    println!("{}", r::db("test").table("employees").insert(bob.to_json()).run(&mut conn));
+    println!("{}", r::db("test").table("employees").run(&mut conn));
+    println!("{}", r::db("test").table_drop("employees").run(&mut conn));
+    println!("{}", r::db("testing").table_list().run(&mut conn));
 }
