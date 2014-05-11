@@ -72,8 +72,8 @@ impl Connection {
 
         let _recv_token = try!(self.stream.read_le_i64());
 
-        let recv_size = try!(self.stream.read_le_i32());
-        self.stream.read_exact(recv_size.to_uint().unwrap())
+        let recv_size = try!(self.stream.read_le_u32());
+        self.stream.read_exact(recv_size as uint)
     }
 
     // like read_to_end, but stops when a 0 is read.
