@@ -84,15 +84,15 @@ pub struct Database {
 }
 
 impl Database {
-    pub fn table_create(self, name: &str) -> Datum {
+    pub fn table_create(self, name: &str) -> Func {
         internal::table_create(name, Some(self))
     }
 
-    pub fn table_drop(self, name: &str) -> Datum {
+    pub fn table_drop(self, name: &str) -> Func {
         internal::table_drop(name, Some(self))
     }
 
-    pub fn table_list(self) -> Datum {
+    pub fn table_list(self) -> Func {
         internal::table_list(Some(self))
     }
 
@@ -113,7 +113,7 @@ pub fn db(name: &str) -> Database {
 }
 
 pub struct Table {
-    term: json::Json
+    term: Func
 }
 
 pub fn table(name: &str) -> Table {
@@ -121,80 +121,64 @@ pub fn table(name: &str) -> Table {
 }
 
 impl Table {
-    pub fn insert(self, document: Datum) -> Datum {
-        let args = json::List(vec![self.term, document]);
-        json::List(vec![term::Insert.to_json(), args])
+    pub fn insert(self, document: json::Json) -> Func {
+        let args = vec![document];
+        Func::new(self.term, term::Insert, args)
     }
 }
 
 impl ToJson for Table {
     fn to_json(&self) -> json::Json {
-        self.term.clone()
+        self.term.to_json()
     }
 }
 
-mod internal {
-    use j = serialize::json;
-    use serialize::json::{ToJson};
-    use super::{Database, Datum, Table, term};
-
-    pub fn table(name: &str, db: Option<Database>) -> Table {
-        let args = j::List(match db {
-            Some(database) => vec![database.to_json(), name.to_owned().to_json()],
-            None => vec![name.to_owned().to_json()]
-        });
-        Table {
-            term: j::List(vec![term::Table.to_json(), args])
-        }
-    }
-
-    pub fn table_create(name: &str, db: Option<Database>) -> Datum {
-        // vvv this is screaming for a macro
-        // build_args!(name, db, ...) =>
-        let args = match db {
-            Some(database) => {
-                j::List(vec![database.to_json(), name.to_owned().to_json()])
-            },
-            None => {
-                j::List(vec![name.to_owned().to_json()])
-            }
-        };
-        j::List(vec![term::TableCreate.to_json(), args])
-    }
-
-    pub fn table_drop(name: &str, db: Option<Database>) -> Datum {
-        let args = match db {
-            Some(database) => {
-                j::List(vec![database.to_json(), name.to_owned().to_json()])
-            },
-            None => {
-                j::List(vec![name.to_owned().to_json()])
-            }
-        };
-        j::List(vec![term::TableDrop.to_json(), args])
-    }
-
-    pub fn table_list(db: Option<Database>) -> Datum {
-        let args = match db {
-            Some(database) => {
-                j::List(vec![database.to_json()])
-            },
-            None => {
-                j::List(vec![])
-            }
-        };
-        j::List(vec![term::TableList.to_json(), args])
-    }
-}
-
-pub fn table_create(name: &str) -> Datum {
+pub fn table_create(name: &str) -> Func {
     internal::table_create(name, None)
 }
 
-pub fn table_drop(name: &str) -> Datum {
+pub fn table_drop(name: &str) -> Func {
     internal::table_drop(name, None)
 }
 
-pub fn table_list() -> Datum {
+pub fn table_list() -> Func {
     internal::table_list(None)
+}
+
+mod internal {
+    use serialize::json::{ToJson};
+    use super::{Database, Func, Table, term};
+
+    pub fn table(name: &str, database: Option<Database>) -> Table {
+        let func_args = vec![name.to_owned().to_json()];
+        let term = match database {
+            Some(db) => Func::new(db.term, term::Table, func_args),
+            None => Func::new_chain(term::Table, func_args)
+        };
+        Table { term: term }
+    }
+
+    pub fn table_create(name: &str, database: Option<Database>) -> Func {
+        let func_args = vec![name.to_owned().to_json()];
+        match database {
+            Some(db) => Func::new(db.term, term::TableCreate, func_args),
+            None => Func::new_chain(term::TableCreate, func_args)
+        }
+    }
+
+    pub fn table_drop(name: &str, database: Option<Database>) -> Func {
+        let func_args = vec![name.to_owned().to_json()];
+        match database {
+            Some(db) => Func::new(db.term, term::TableDrop, func_args),
+            None => Func::new_chain(term::TableDrop, func_args)
+        }
+    }
+
+    pub fn table_list(database: Option<Database>) -> Func {
+        let func_args = vec![];
+        match database {
+            Some(db) => Func::new(db.term, term::TableList, func_args),
+            None => Func::new_chain(term::TableList, func_args)
+        }
+    }
 }
