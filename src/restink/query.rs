@@ -68,6 +68,12 @@ impl Table {
     }
 }
 
+impl ToJson for Table {
+    fn to_json(&self) -> json::Json {
+        self.term.clone()
+    }
+}
+
 mod internal {
     use j = serialize::json;
     use serialize::json::{ToJson};
