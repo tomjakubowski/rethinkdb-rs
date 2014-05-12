@@ -1,15 +1,58 @@
 extern crate serialize;
 
+pub use self::term::Func;
+
 use serialize::json;
-use serialize::json::{ToJson};
+use serialize::json::ToJson;
 
 pub type Datum = json::Json;
 
 mod term {
+    use super::Datum;
+
     use serialize::json;
     use serialize::json::{ToJson};
 
-    pub enum Type {
+    pub struct Func {
+        func_type: FuncType,
+        prev: Option<Box<Func>>,
+        args: Vec<Datum>,
+        opt_args: Option<json::Object>
+    }
+
+    impl Func {
+        pub fn new(prev: Func, func_type: FuncType, args: Vec<Datum>) -> Func {
+            Func {
+                func_type: func_type,
+                prev: Some(box prev),
+                args: args,
+                opt_args: None
+            }
+        }
+
+        pub fn new_chain(func_type: FuncType, args: Vec<Datum>) -> Func {
+            Func {
+                func_type: func_type,
+                prev: None,
+                args: args,
+                opt_args: None
+            }
+        }
+    }
+
+    impl ToJson for Func {
+        fn to_json(&self) -> json::Json {
+            let Func { func_type, ref prev, ref args, ref opt_args } = *self;
+            let mut term_args = match *prev {
+                Some(ref f) => { vec![f.to_json()] },
+                None => { vec![] }
+            };
+            term_args.push_all(args.as_slice());
+            json::List(vec![func_type.to_json(), term_args.to_json(), opt_args.to_json()])
+        }
+    }
+
+    pub enum FuncType {
         Db = 14,
         Table = 15,
         Insert = 56,
@@ -18,15 +61,17 @@ mod term {
         TableList = 62
     }
 
-    impl ToJson for Type {
+    impl ToJson for FuncType {
         fn to_json(&self) -> json::Json {
             json::Number(*self as f64)
         }
     }
+
 }
 
+
 pub struct Database {
-    term: Datum
+    term: Func
 }
 
 impl Database {

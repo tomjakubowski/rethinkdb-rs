@@ -26,3 +26,4 @@ pub trait Runnable : ToJson {
 
 impl Runnable for json::Json { }
 impl Runnable for query::Table { }
+impl Runnable for query::Func { }
