@@ -35,18 +35,19 @@ pub fn main() {
     use r = restink::query;
     use std::io::net::ip::SocketAddr;
 
-    let addr = from_str::<SocketAddr>("127.0.0.1:28015").expect("your address is garbage");
+    let addr = from_str::<SocketAddr>("127.0.0.1:28015").unwrap();
     let mut conn = restink::connect(addr).unwrap();
 
     let bob = Employee::new("Bob");
 
-    println!("{}", r::db("test").table_list().run(&mut conn));
+    println!("list tables {}", r::db("test").table_list().run(&mut conn));
+    println!("create table {}", r::db("test").table_create("employees").run(&mut conn));
 
-    println!("{}", r::db("test").table_list().run(&mut conn));
-    println!("{}", r::db("test").table_create("employees").run(&mut conn));
+    println!("insert document {}",
+             r::db("test").table("employees").insert(bob.to_json()).run(&mut conn));
 
-    println!("{}", r::db("test").table("employees").insert(bob.to_json()).run(&mut conn));
-    println!("{}", r::db("test").table("employees").run(&mut conn));
-    println!("{}", r::db("test").table_drop("employees").run(&mut conn));
-    println!("{}", r::db("testing").table_list().run(&mut conn));
+    println!("show table {}", r::db("test").table("employees").run(&mut conn));
+    println!("drop table {}", r::db("test").table_drop("employees").run(&mut conn));
+
+    println!("list tables (should fail) {}", r::db("testing").table_list().run(&mut conn));
 }
