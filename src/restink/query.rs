@@ -22,16 +22,16 @@ mod term {
     }
 
     impl Func {
-        pub fn new(prev: Func, func_type: FuncType, args: Vec<Datum>) -> Func {
+        pub fn chain(self, func_type: FuncType, args: Vec<Datum>) -> Func {
             Func {
                 func_type: func_type,
-                prev: Some(box prev),
+                prev: Some(box self),
                 args: args,
                 opt_args: None
             }
         }
 
-        pub fn new_chain(func_type: FuncType, args: Vec<Datum>) -> Func {
+        pub fn start(func_type: FuncType, args: Vec<Datum>) -> Func {
             Func {
                 func_type: func_type,
                 prev: None,
@@ -108,7 +108,7 @@ impl ToJson for Database {
 pub fn db(name: &str) -> Database {
     let args = vec![name.to_owned().to_json()];
     Database {
-        term: Func::new_chain(term::Db, args)
+        term: Func::start(term::Db, args)
     }
 }
 
@@ -123,7 +123,7 @@ pub fn table(name: &str) -> Table {
 impl Table {
     pub fn insert(self, document: json::Json) -> Func {
         let args = vec![document];
-        Func::new(self.term, term::Insert, args)
+        self.term.chain(term::Insert, args)
     }
 }
 
@@ -152,8 +152,8 @@ mod internal {
     pub fn table(name: &str, database: Option<Database>) -> Table {
         let func_args = vec![name.to_owned().to_json()];
         let term = match database {
-            Some(db) => Func::new(db.term, term::Table, func_args),
-            None => Func::new_chain(term::Table, func_args)
+            Some(db) => db.term.chain(term::Table, func_args),
+            None => Func::start(term::Table, func_args)
         };
         Table { term: term }
     }
@@ -161,24 +161,24 @@ mod internal {
     pub fn table_create(name: &str, database: Option<Database>) -> Func {
         let func_args = vec![name.to_owned().to_json()];
         match database {
-            Some(db) => Func::new(db.term, term::TableCreate, func_args),
-            None => Func::new_chain(term::TableCreate, func_args)
+            Some(db) => db.term.chain(term::TableCreate, func_args),
+            None => Func::start(term::TableCreate, func_args)
         }
     }
 
     pub fn table_drop(name: &str, database: Option<Database>) -> Func {
         let func_args = vec![name.to_owned().to_json()];
         match database {
-            Some(db) => Func::new(db.term, term::TableDrop, func_args),
-            None => Func::new_chain(term::TableDrop, func_args)
+            Some(db) => db.term.chain(term::TableDrop, func_args),
+            None => Func::start(term::TableDrop, func_args)
         }
     }
 
     pub fn table_list(database: Option<Database>) -> Func {
         let func_args = vec![];
         match database {
-            Some(db) => Func::new(db.term, term::TableList, func_args),
-            None => Func::new_chain(term::TableList, func_args)
+            Some(db) => db.term.chain(term::TableList, func_args),
+            None => Func::start(term::TableList, func_args)
         }
     }
 }
