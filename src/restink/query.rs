@@ -1,6 +1,7 @@
+extern crate collections;
 extern crate serialize;
 
-pub use self::term::Func;
+pub use self::term::{Func, FuncType};
 
 use serialize::json;
 use serialize::json::ToJson;
@@ -42,13 +43,21 @@ mod term {
 
     impl ToJson for Func {
         fn to_json(&self) -> json::Json {
+            use collections::TreeMap;
+
             let Func { func_type, ref prev, ref args, ref opt_args } = *self;
             let mut term_args = match *prev {
                 Some(ref f) => { vec![f.to_json()] },
                 None => { vec![] }
             };
             term_args.push_all(args.as_slice());
-            json::List(vec![func_type.to_json(), term_args.to_json(), opt_args.to_json()])
+
+            let term_opt_args = match *opt_args {
+                None => json::Object(box TreeMap::new()),
+                Some(ref ob) => json::Object(box ob.clone())
+            };
+
+            json::List(vec![func_type.to_json(), term_args.to_json(), term_opt_args.to_json()])
         }
     }
 
@@ -92,14 +101,19 @@ impl Database {
     }
 }
 
+impl ToJson for Database {
+    fn to_json(&self) -> json::Json { self.term.to_json() }
+}
+
 pub fn db(name: &str) -> Database {
-    let args = json::List(vec![name.to_owned().to_json()]);
-    Database { term: json::List(vec![term::Db.to_json(), args]) }
+    let args = vec![name.to_owned().to_json()];
+    Database {
+        term: Func::new_chain(term::Db, args)
+    }
 }
 
 pub struct Table {
-    // FIXME term as public field is a temporary workaround
-    pub term: Datum
+    term: json::Json
 }
 
 pub fn table(name: &str) -> Table {
@@ -107,8 +121,8 @@ pub fn table(name: &str) -> Table {
 }
 
 impl Table {
-    pub fn insert(self, doc: Datum) -> Datum {
-        let args = json::List(vec![self.term, doc]);
+    pub fn insert(self, document: Datum) -> Datum {
+        let args = json::List(vec![self.term, document]);
         json::List(vec![term::Insert.to_json(), args])
     }
 }
@@ -125,10 +139,10 @@ mod internal {
     use super::{Database, Datum, Table, term};
 
     pub fn table(name: &str, db: Option<Database>) -> Table {
-        let args = match db {
-            Some(database) => j::List(vec![database.term, name.to_owned().to_json()]),
-            None => j::List(vec![name.to_owned().to_json()])
-        };
+        let args = j::List(match db {
+            Some(database) => vec![database.to_json(), name.to_owned().to_json()],
+            None => vec![name.to_owned().to_json()]
+        });
         Table {
             term: j::List(vec![term::Table.to_json(), args])
         }
@@ -139,7 +153,7 @@ mod internal {
         // build_args!(name, db, ...) =>
         let args = match db {
             Some(database) => {
-                j::List(vec![database.term, name.to_owned().to_json()])
+                j::List(vec![database.to_json(), name.to_owned().to_json()])
             },
             None => {
                 j::List(vec![name.to_owned().to_json()])
@@ -151,7 +165,7 @@ mod internal {
     pub fn table_drop(name: &str, db: Option<Database>) -> Datum {
         let args = match db {
             Some(database) => {
-                j::List(vec![database.term, name.to_owned().to_json()])
+                j::List(vec![database.to_json(), name.to_owned().to_json()])
             },
             None => {
                 j::List(vec![name.to_owned().to_json()])
@@ -163,7 +177,7 @@ mod internal {
     pub fn table_list(db: Option<Database>) -> Datum {
         let args = match db {
             Some(database) => {
-                j::List(vec![database.term])
+                j::List(vec![database.to_json()])
             },
             None => {
                 j::List(vec![])
