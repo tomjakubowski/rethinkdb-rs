@@ -1,5 +1,3 @@
-#![feature(struct_variant)]
-
 extern crate serialize;
 
 #[cfg(test)]

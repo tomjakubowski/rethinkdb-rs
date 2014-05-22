@@ -1,6 +1,5 @@
-#![crate_id="restink#0.1.0"]
-#![crate_type="lib"]
-#![feature(struct_variant)]
+#![crate_id = "restink#0.1.0"]
+#![crate_type = "lib"]
 #![allow(attribute_usage)]
 
 extern crate collections;

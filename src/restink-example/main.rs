@@ -1,5 +1,5 @@
-#![crate_id="restink-example#0.1.0"]
-#![crate_type="bin"]
+#![crate_id = "restink-example#0.1.0"]
+#![crate_type = "bin"]
 
 extern crate collections;
 extern crate restink;

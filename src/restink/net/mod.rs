@@ -1,5 +1,3 @@
-#![feature(struct_variant)]
-
 extern crate collections;
 extern crate serialize;
 
