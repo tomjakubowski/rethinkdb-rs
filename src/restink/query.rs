@@ -106,7 +106,7 @@ impl ToJson for Database {
 }
 
 pub fn db(name: &str) -> Database {
-    let args = vec![name.to_owned().to_json()];
+    let args = vec![name.to_strbuf().to_json()];
     Database {
         term: Func::start(term::Db, args)
     }
@@ -150,7 +150,7 @@ mod internal {
     use super::{Database, Func, Table, term};
 
     pub fn table(name: &str, database: Option<Database>) -> Table {
-        let func_args = vec![name.to_owned().to_json()];
+        let func_args = vec![name.to_strbuf().to_json()];
         let term = match database {
             Some(db) => db.term.chain(term::Table, func_args),
             None => Func::start(term::Table, func_args)
@@ -159,7 +159,7 @@ mod internal {
     }
 
     pub fn table_create(name: &str, database: Option<Database>) -> Func {
-        let func_args = vec![name.to_owned().to_json()];
+        let func_args = vec![name.to_strbuf().to_json()];
         match database {
             Some(db) => db.term.chain(term::TableCreate, func_args),
             None => Func::start(term::TableCreate, func_args)
@@ -167,7 +167,7 @@ mod internal {
     }
 
     pub fn table_drop(name: &str, database: Option<Database>) -> Func {
-        let func_args = vec![name.to_owned().to_json()];
+        let func_args = vec![name.to_strbuf().to_json()];
         match database {
             Some(db) => db.term.chain(term::TableDrop, func_args),
             None => Func::start(term::TableDrop, func_args)

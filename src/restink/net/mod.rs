@@ -6,12 +6,11 @@ extern crate serialize;
 use collections::TreeMap;
 
 use serialize::json;
-use serialize::json::{Json};
+use serialize::json::Json;
 
 use std::fmt;
 use std::io::{BufferedStream, IoResult};
-use std::io::net::tcp::{TcpStream};
-use std::io::net::ip::{SocketAddr};
+use std::io::net::tcp::TcpStream;
 
 pub use Error = self::response::Error;
 pub use RdbResult = self::response::RdbResult;
@@ -29,7 +28,7 @@ pub struct Connection {
 
 impl fmt::Show for Connection {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f.buf, "Connection")
+        write!(f, "Connection")
     }
 }
 
@@ -39,8 +38,8 @@ impl Connection {
         use std::str;
 
         let mut global_optargs = box TreeMap::new();
-        global_optargs.insert("db".to_owned(), j::List(vec![j::Number(14.),
-                                               j::List(vec![j::String("test".to_owned())])]));
+        global_optargs.insert("db".to_strbuf(), j::List(vec![j::Number(14.),
+                                               j::List(vec![j::String("test".to_strbuf())])]));
         let global_optargs = j::Object(global_optargs);
 
         let query = j::List(vec![j::Number(1.), term, global_optargs]);
@@ -101,12 +100,12 @@ impl Connection {
     }
 }
 
-pub fn connect(address: SocketAddr) -> RdbResult<Connection> {
+pub fn connect(host: &str, port: u16) -> RdbResult<Connection> {
     use self::response::ProtocolError;
     use std::str;
 
-    fn make_conn(address: SocketAddr) -> IoResult<Connection> {
-        let stream = try!(TcpStream::connect(address));
+    fn make_conn(host: &str, port: u16) -> IoResult<Connection> {
+        let stream = try!(TcpStream::connect(host, port));
         Ok(Connection { stream: BufferedStream::new(stream) })
     }
 
@@ -115,7 +114,7 @@ pub fn connect(address: SocketAddr) -> RdbResult<Connection> {
         conn.read_handshake_reply()
     }
 
-    let mut conn = try!(make_conn(address).map_err(|e| { response::IoError(e) }));
+    let mut conn = try!(make_conn(host, port).map_err(|e| { response::IoError(e) }));
     let response = try!(shake_hands(&mut conn).map_err(|e| { response::IoError(e) }));
 
     match str::from_utf8(response.as_slice()) {

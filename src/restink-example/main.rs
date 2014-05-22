@@ -14,29 +14,27 @@ use restink::Runnable;
 #[deriving(Decodable, Encodable, Show)]
 struct Employee {
     id: Option<StrBuf>,
-    name: ~str
+    name: StrBuf
 }
 
 impl Employee {
     pub fn new(name: &str) -> Employee {
-        Employee { id: None, name: name.to_owned() }
+        Employee { id: None, name: name.to_strbuf() }
     }
 }
 
 impl ToJson for Employee {
     fn to_json(&self) -> json::Json {
         let mut e = box TreeMap::new();
-        e.insert("name".to_owned(), self.name.to_json());
+        e.insert("name".to_strbuf(), self.name.to_json());
         json::Object(e)
     }
 }
 
 pub fn main() {
     use r = restink::query;
-    use std::io::net::ip::SocketAddr;
 
-    let addr = from_str::<SocketAddr>("127.0.0.1:28015").unwrap();
-    let mut conn = restink::connect(addr).unwrap();
+    let mut conn = restink::connect("127.0.0.1", 28015).unwrap();
 
     let bob = Employee::new("Bob");
 

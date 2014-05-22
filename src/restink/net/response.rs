@@ -53,8 +53,8 @@ struct RawResponse {
 
 impl RawResponse {
     fn from_json(json: json::Json) -> RdbResult<RawResponse> {
-        let values = (json.find(&"t".to_owned()).and_then(|x| x.as_number()),
-                      json.find(&"r".to_owned()));
+        let values = (json.find(&"t".to_strbuf()).and_then(|x| x.as_number()),
+                      json.find(&"r".to_strbuf()));
 
         match values {
             (Some(t), Some(r)) => Ok(RawResponse { res_type: t as int, res: r.clone() }),
@@ -101,8 +101,8 @@ mod test {
     fn test_raw_response_from_json() {
         let json = json::from_str(r#"{"t": 1, "r": [["bar","foo"]]}"#).unwrap();
         let raw_res = RawResponse::from_json(json).unwrap();
-        let tables = json::List(vec![json::String("bar".to_owned()),
-                                     json::String("foo".to_owned())]);
+        let tables = json::List(vec![json::String("bar".to_strbuf()),
+                                     json::String("foo".to_strbuf())]);
 
         assert_eq!(raw_res.res_type, 1);
         assert_eq!(raw_res.res, json::List(vec![tables]));
@@ -112,8 +112,8 @@ mod test {
     fn test_success_from_json() {
         let json = json::from_str(r#"{"t": 1, "r": [["bar","foo"]]}"#).unwrap();
         let res = Response::from_json(json).unwrap();
-        let tables = json::List(vec![json::String("bar".to_owned()),
-                                     json::String("foo".to_owned())]);
+        let tables = json::List(vec![json::String("bar".to_strbuf()),
+                                     json::String("foo".to_strbuf())]);
 
         let Response { kind: kind, values: values } = res;
 
