@@ -1,8 +1,11 @@
+#![feature(default_type_params)]
+
 extern crate collections;
 extern crate serialize;
 
 pub use self::term::{Func, FuncType};
 
+use serialize::{Decodable, Decoder};
 use serialize::json;
 use serialize::json::ToJson;
 
@@ -12,25 +15,27 @@ mod term {
     use super::Datum;
 
     use serialize::json;
-    use serialize::json::{ToJson};
+    use serialize::json::{Json,ToJson};
 
-    pub struct Func {
+    pub struct Func<Out=Json> {
         func_type: FuncType,
-        prev: Option<Box<Func>>,
+        prev: Option<Json>,
         args: Vec<Datum>,
         opt_args: Option<json::Object>
     }
 
-    impl Func {
-        pub fn chain(self, func_type: FuncType, args: Vec<Datum>) -> Func {
+    impl<Out> Func {
+        pub fn chain(self, func_type: FuncType, args: Vec<Datum>) -> Func<Out> {
             Func {
                 func_type: func_type,
-                prev: Some(box self),
+                prev: Some(self.to_json()),
                 args: args,
                 opt_args: None
             }
         }
+    }
 
+    impl Func {
         pub fn start(func_type: FuncType, args: Vec<Datum>) -> Func {
             Func {
                 func_type: func_type,
@@ -41,7 +46,7 @@ mod term {
         }
     }
 
-    impl ToJson for Func {
+    impl<T> ToJson for Func<T> {
         fn to_json(&self) -> json::Json {
             use collections::TreeMap;
 
@@ -64,6 +69,7 @@ mod term {
     pub enum FuncType {
         Db = 14,
         Table = 15,
+        Get = 16,
         Insert = 56,
         TableCreate = 60,
         TableDrop = 61,
@@ -80,7 +86,7 @@ mod term {
 
 
 pub struct Database {
-    term: Func
+    term: Func<json::Json>
 }
 
 impl Database {
@@ -121,7 +127,11 @@ pub fn table(name: &str) -> Table {
 }
 
 impl Table {
-    pub fn insert(self, document: json::Json) -> Func {
+    pub fn get(self, key: &str) -> Func {
+        self.term.chain(term::Get, vec![key.to_strbuf().to_json()])
+    }
+
+    pub fn insert(self, document: json::Json) -> Func<Writes> {
         let args = vec![document];
         self.term.chain(term::Insert, args)
     }
@@ -180,5 +190,36 @@ mod internal {
             Some(db) => db.term.chain(term::TableList, func_args),
             None => Func::start(term::TableList, func_args)
         }
+    }
+}
+
+#[deriving(Show)]
+pub struct Writes {
+    pub deleted: uint,
+    pub errors: uint,
+    pub inserted: uint,
+    pub replaced: uint,
+    pub skipped: uint,
+    pub unchanged: uint,
+    pub generated_keys: Vec<StrBuf>
+}
+
+impl<D: Decoder<E>, E> Decodable<D, E> for Writes {
+    fn decode(d: &mut D) -> Result<Writes, E> {
+        d.read_struct("Writes", 7u, |d| {
+            Ok(Writes {
+                deleted: try!(d.read_struct_field("deleted", 0u, |d| Decodable::decode(d))),
+                errors: try!(d.read_struct_field("errors", 1u, |d| Decodable::decode(d))),
+                inserted: try!(d.read_struct_field("inserted", 2u, |d| Decodable::decode(d))),
+                replaced: try!(d.read_struct_field("replaced", 3u, |d| Decodable::decode(d))),
+                skipped: try!(d.read_struct_field("skipped", 4u, |d| Decodable::decode(d))),
+                unchanged: try!(d.read_struct_field("unchanged", 5u, |d| Decodable::decode(d))),
+                generated_keys: match d.read_struct_field("generated_keys",
+                                                          6u, |d| Decodable::decode(d)) {
+                    Ok(opt) => opt,
+                    Err(_) => Vec::new()
+                }
+            })
+        })
     }
 }

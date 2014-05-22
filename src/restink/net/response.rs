@@ -1,3 +1,4 @@
+#![feature(default_type_params)]
 extern crate serialize;
 
 #[cfg(test)]
@@ -6,6 +7,7 @@ extern crate collections;
 use std::io;
 
 use serialize::json;
+use serialize::json::Json;
 
 pub type RdbResult<A> = Result<A, Error>;
 
@@ -19,7 +21,7 @@ pub enum Error {
 }
 
 impl Error {
-    pub fn new(kind: int, res: json::Json) -> Error {
+    pub fn new(kind: int, res: Json) -> Error {
         let msgs = res.as_list();
         let msg = match msgs.map(|x| x.as_slice()) {
             Some([json::String(ref x)]) => x.to_owned(),
@@ -46,19 +48,21 @@ pub enum ResponseKind {
 #[deriving(Show)]
 struct RawResponse {
     res_type: int,
-    res: json::Json
+    res: Json
 }
 
 impl RawResponse {
-    fn from_json(json: json::Json) -> RdbResult<RawResponse> {
+    fn from_json(json: Json) -> RdbResult<RawResponse> {
         let values = (json.find(&"t".to_strbuf()).and_then(|x| x.as_number()),
                       json.find(&"r".to_strbuf()));
 
         match values {
-            (Some(t), Some(r)) => Ok(RawResponse { res_type: t as int, res: r.clone() }),
+            (Some(t), Some(r)) => {
+                Ok(RawResponse { res_type: t as int, res: r.clone() })
+            },
             _ => {
                 let msg = format!("JSON decoding error: {}", json);
-                return Err(ProtocolError(msg));
+                Err(ProtocolError(msg))
             }
         }
     }
@@ -66,12 +70,12 @@ impl RawResponse {
 
 #[deriving(Show)]
 pub struct Response {
-    kind: ResponseKind,
-    values: json::Json
+    pub kind: ResponseKind,
+    pub values: Json
 }
 
 impl Response {
-    pub fn from_json(json: json::Json) -> RdbResult<Response> {
+    pub fn from_json(json: Json) -> RdbResult<Response> {
         RawResponse::from_json(json).and_then(|raw: RawResponse| {
             match raw.res_type {
                 1 | 2 => Ok(Response::new(ResponseComplete, raw.res)),
@@ -81,7 +85,7 @@ impl Response {
         })
     }
 
-    fn new(kind: ResponseKind, res: json::Json) -> Response {
+    fn new(kind: ResponseKind, res: Json) -> Response {
         Response {
             kind: kind,
             values: res

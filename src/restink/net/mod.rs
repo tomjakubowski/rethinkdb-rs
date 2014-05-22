@@ -1,3 +1,5 @@
+#![feature(default_type_params)]
+
 extern crate collections;
 extern crate serialize;
 
@@ -31,7 +33,7 @@ impl fmt::Show for Connection {
 }
 
 impl Connection {
-    pub fn run(&mut self, term: json::Json) -> RdbResult<Response> {
+    pub fn run(&mut self, term: Json) -> RdbResult<Response> {
         use j = serialize::json;
         use std::str;
 
