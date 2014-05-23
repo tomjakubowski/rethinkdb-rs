@@ -17,14 +17,14 @@ mod term {
     use serialize::json;
     use serialize::json::{Json,ToJson};
 
-    pub struct Func<Out=Json> {
+    pub struct Func<Out> {
         func_type: FuncType,
         prev: Option<Json>,
         args: Vec<Datum>,
         opt_args: Option<json::Object>
     }
 
-    impl<Out> Func {
+    impl<Out, In> Func<In> {
         pub fn chain(self, func_type: FuncType, args: Vec<Datum>) -> Func<Out> {
             Func {
                 func_type: func_type,
@@ -35,8 +35,8 @@ mod term {
         }
     }
 
-    impl Func {
-        pub fn start(func_type: FuncType, args: Vec<Datum>) -> Func {
+    impl<Out> Func<Out> {
+        pub fn start(func_type: FuncType, args: Vec<Datum>) -> Func<Out> {
             Func {
                 func_type: func_type,
                 prev: None,
@@ -90,15 +90,15 @@ pub struct Database {
 }
 
 impl Database {
-    pub fn table_create(self, name: &str) -> Func {
+    pub fn table_create(self, name: &str) -> Func<()> {
         internal::table_create(name, Some(self))
     }
 
-    pub fn table_drop(self, name: &str) -> Func {
+    pub fn table_drop(self, name: &str) -> Func<()> {
         internal::table_drop(name, Some(self))
     }
 
-    pub fn table_list(self) -> Func {
+    pub fn table_list(self) -> Func<Vec<StrBuf>> {
         internal::table_list(Some(self))
     }
 
@@ -119,7 +119,7 @@ pub fn db(name: &str) -> Database {
 }
 
 pub struct Table {
-    term: Func
+    term: Func<json::Json>
 }
 
 pub fn table(name: &str) -> Table {
@@ -127,7 +127,7 @@ pub fn table(name: &str) -> Table {
 }
 
 impl Table {
-    pub fn get(self, key: &str) -> Func {
+    pub fn get(self, key: &str) -> Func<json::Json> {
         self.term.chain(term::Get, vec![key.to_strbuf().to_json()])
     }
 
@@ -143,15 +143,15 @@ impl ToJson for Table {
     }
 }
 
-pub fn table_create(name: &str) -> Func {
+pub fn table_create(name: &str) -> Func<()> {
     internal::table_create(name, None)
 }
 
-pub fn table_drop(name: &str) -> Func {
+pub fn table_drop(name: &str) -> Func<()> {
     internal::table_drop(name, None)
 }
 
-pub fn table_list() -> Func {
+pub fn table_list() -> Func<Vec<StrBuf>> {
     internal::table_list(None)
 }
 
@@ -168,7 +168,7 @@ mod internal {
         Table { term: term }
     }
 
-    pub fn table_create(name: &str, database: Option<Database>) -> Func {
+    pub fn table_create(name: &str, database: Option<Database>) -> Func<()> {
         let func_args = vec![name.to_strbuf().to_json()];
         match database {
             Some(db) => db.term.chain(term::TableCreate, func_args),
@@ -176,7 +176,7 @@ mod internal {
         }
     }
 
-    pub fn table_drop(name: &str, database: Option<Database>) -> Func {
+    pub fn table_drop(name: &str, database: Option<Database>) -> Func<()> {
         let func_args = vec![name.to_strbuf().to_json()];
         match database {
             Some(db) => db.term.chain(term::TableDrop, func_args),
@@ -184,7 +184,7 @@ mod internal {
         }
     }
 
-    pub fn table_list(database: Option<Database>) -> Func {
+    pub fn table_list(database: Option<Database>) -> Func<Vec<StrBuf>> {
         let func_args = vec![];
         match database {
             Some(db) => db.term.chain(term::TableList, func_args),

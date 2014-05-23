@@ -12,10 +12,10 @@ use std::fmt;
 use std::io::{BufferedStream, IoResult};
 use std::io::net::tcp::TcpStream;
 
-pub use Error = self::response::Error;
-pub use RdbResult = self::response::RdbResult;
-pub use Response = self::response::Response;
-pub use ResponseKind = self::response::ResponseKind;
+pub use self::response::{Error, DriverError, ProtocolError};
+pub use self::response::RdbResult;
+pub use self::response::Response;
+pub use self::response::{ResponseKind, ResponseAtom, ResponseSequence};
 
 mod response;
 

@@ -57,8 +57,4 @@ pub fn main() {
     let key = writes.generated_keys.get(0);
     println!("get document @ {} {}", key,
              r::db("test").table("employees").get(key.as_slice()).run(&mut conn));
-
-    println!("drop table {}", r::db("test").table_drop("employees").run(&mut conn));
-
-    println!("list tables (should fail) {}", r::db("testing").table_list().run(&mut conn));
 }

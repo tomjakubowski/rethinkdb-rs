@@ -23,6 +23,30 @@ trait FromResponse {
     fn from_response(res: Response) -> RdbResult<Self>;
 }
 
+impl FromResponse for Vec<StrBuf> {
+    fn from_response(res: Response) -> RdbResult<Vec<StrBuf>> {
+        use net::{DriverError, ResponseAtom, ResponseSequence};
+
+        match res.kind {
+            ResponseAtom => {
+                // vvv bad
+                let list = res.values.as_list().unwrap();
+                let list = list.get(0).as_list().unwrap();
+
+                Ok(list.iter().map(|s| {
+                    s.as_string().unwrap().to_strbuf()
+                }).collect())
+            },
+            ResponseSequence => {
+                Err(DriverError(format!("FIXME ResponseSequence {}", res)))
+            },
+            _ => {
+                Err(DriverError(format!("Couldn't convert {} to Vec<StrBuf>", res)))
+            }
+        }
+    }
+}
+
 impl FromResponse for query::Writes {
     // vvvv this is all very very bad
     fn from_response(res: Response) -> RdbResult<query::Writes> {
@@ -37,12 +61,20 @@ impl FromResponse for Response {
     fn from_response(res: Response) -> RdbResult<Response> { Ok(res) }
 }
 
+impl FromResponse for json::Json {
+    fn from_response(res: Response) -> RdbResult<json::Json> { Ok(res.values) }
+}
+
+impl FromResponse for () {
+    fn from_response(_: Response) -> RdbResult<()> { Ok(()) }
+}
+
 pub trait Runnable<Out: FromResponse> : ToJson {
     fn run(self, conn: &mut net::Connection) -> RdbResult<Out> {
         conn.run(self.to_json()).and_then(|res| { FromResponse::from_response(res) })
     }
 }
 
+// FIXME: query::Table -> query::TableQuery
 impl Runnable<Response> for query::Table {}
-impl Runnable<Response> for query::Func<json::Json> {}
-impl Runnable<query::Writes> for query::Func<query::Writes> {}
+impl<T: FromResponse> Runnable<T> for query::Func<T> {}

@@ -17,6 +17,7 @@ pub enum Error {
     CompileError(~str),
     RuntimeError(~str),
     ProtocolError(~str),
+    DriverError(~str), // FIXME: should this be merged with ProtocolError?
     IoError(io::IoError)
 }
 
@@ -41,7 +42,8 @@ impl Error {
 
 #[deriving(Show, Eq)]
 pub enum ResponseKind {
-    ResponseComplete,
+    ResponseAtom,
+    ResponseSequence,
     ResponsePartial
 }
 
@@ -78,7 +80,8 @@ impl Response {
     pub fn from_json(json: Json) -> RdbResult<Response> {
         RawResponse::from_json(json).and_then(|raw: RawResponse| {
             match raw.res_type {
-                1 | 2 => Ok(Response::new(ResponseComplete, raw.res)),
+                1 => Ok(Response::new(ResponseAtom, raw.res)),
+                2 => Ok(Response::new(ResponseSequence, raw.res)),
                 3 => Ok(Response::new(ResponsePartial, raw.res)),
                 n => Err(Error::new(n, raw.res))
             }
@@ -97,7 +100,7 @@ impl Response {
 mod test {
     use serialize::json;
 
-    use super::{RawResponse, Response, ResponseComplete};
+    use super::{RawResponse, Response, ResponseAtom};
 
     #[test]
     fn test_raw_response_from_json() {
@@ -119,7 +122,7 @@ mod test {
 
         let Response { kind: kind, values: values } = res;
 
-        assert_eq!(kind, ResponseComplete);
+        assert_eq!(kind, ResponseAtom);
         assert_eq!(values, json::List(vec![tables]));
     }
 
