@@ -9,8 +9,6 @@ use collections::TreeMap;
 use serialize::json;
 use serialize::json::ToJson;
 
-use restink::Runnable;
-
 #[deriving(Decodable, Encodable, Show)]
 struct Employee {
     id: Option<StrBuf>,
