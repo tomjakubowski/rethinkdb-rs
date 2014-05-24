@@ -212,10 +212,11 @@ impl<D: Decoder<E>, E> Decodable<D, E> for Writes {
                 replaced: try!(d.read_struct_field("replaced", 3u, |d| Decodable::decode(d))),
                 skipped: try!(d.read_struct_field("skipped", 4u, |d| Decodable::decode(d))),
                 unchanged: try!(d.read_struct_field("unchanged", 5u, |d| Decodable::decode(d))),
-                generated_keys: match d.read_struct_field("generated_keys",
-                                                          6u, |d| Decodable::decode(d)) {
-                    Ok(opt) => opt,
-                    Err(_) => Vec::new()
+                generated_keys: {
+                    match d.read_struct_field("generated_keys", 6u, |d| Decodable::decode(d)) {
+                        Ok(opt) => opt,
+                        Err(_) => Vec::new()
+                    }
                 }
             })
         })
