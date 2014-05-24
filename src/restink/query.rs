@@ -1,5 +1,3 @@
-#![feature(default_type_params)]
-
 extern crate collections;
 extern crate serialize;
 

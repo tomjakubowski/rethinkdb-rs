@@ -1,7 +1,6 @@
 #![crate_id = "restink#0.1.0"]
 #![crate_type = "lib"]
 #![allow(attribute_usage)]
-#![feature(default_type_params)]
 
 extern crate collections;
 extern crate serialize;

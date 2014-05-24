@@ -1,4 +1,3 @@
-#![feature(default_type_params)]
 extern crate serialize;
 
 #[cfg(test)]
