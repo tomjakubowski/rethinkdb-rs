@@ -3,6 +3,11 @@
 extern crate collections;
 extern crate serialize;
 
+pub use self::response::{Error, DriverError, ProtocolError};
+pub use self::response::RdbResult;
+pub use self::response::Response;
+pub use self::response::{ResponseKind, ResponseAtom, ResponseSequence};
+
 use collections::TreeMap;
 
 use serialize::json;
@@ -11,11 +16,6 @@ use serialize::json::Json;
 use std::fmt;
 use std::io::{BufferedStream, IoResult};
 use std::io::net::tcp::TcpStream;
-
-pub use self::response::{Error, DriverError, ProtocolError};
-pub use self::response::RdbResult;
-pub use self::response::Response;
-pub use self::response::{ResponseKind, ResponseAtom, ResponseSequence};
 
 mod response;
 
@@ -32,8 +32,12 @@ impl fmt::Show for Connection {
     }
 }
 
+pub fn run(conn: &mut Connection, term: Json) -> RdbResult<Response> {
+    conn.run(term)
+}
+
 impl Connection {
-    pub fn run(&mut self, term: Json) -> RdbResult<Response> {
+    fn run(&mut self, term: Json) -> RdbResult<Response> {
         use j = serialize::json;
         use std::str;
 

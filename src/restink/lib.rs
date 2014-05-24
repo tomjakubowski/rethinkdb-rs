@@ -6,13 +6,15 @@
 extern crate collections;
 extern crate serialize;
 
-pub use net::{connect};
-use net::{RdbResult, Response};
+pub use net::connect;
+pub use net::{Connection, RdbResult, Error};
+
+use net::Response;
 
 use serialize::json;
 use serialize::json::ToJson;
 
-pub mod net;
+mod net;
 pub mod query;
 
 #[cfg(test)]
@@ -93,7 +95,7 @@ impl FromResponse for () {
 }
 
 impl<Out: FromResponse> query::Func<Out> {
-    pub fn run(self, conn: &mut net::Connection) -> RdbResult<Out> {
-        conn.run(self.to_json()).and_then(|res| { FromResponse::from_response(res) })
+    pub fn run(self, conn: &mut Connection) -> RdbResult<Out> {
+        net::run(conn, self.to_json()).and_then(|res| { FromResponse::from_response(res) })
     }
 }
