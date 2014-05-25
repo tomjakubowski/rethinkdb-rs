@@ -12,11 +12,11 @@ pub type RdbResult<A> = Result<A, Error>;
 
 #[deriving(Show)]
 pub enum Error {
-    ClientError(~str),
-    CompileError(~str),
-    RuntimeError(~str),
-    ProtocolError(~str),
-    DriverError(~str), // FIXME: should this be merged with ProtocolError?
+    ClientError(StrBuf),
+    CompileError(StrBuf),
+    RuntimeError(StrBuf),
+    ProtocolError(StrBuf),
+    DriverError(StrBuf), // FIXME: should this be merged with ProtocolError?
     IoError(io::IoError)
 }
 
