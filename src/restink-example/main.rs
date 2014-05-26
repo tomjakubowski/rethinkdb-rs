@@ -45,8 +45,10 @@ pub fn main() {
     let bob = Employee::new("Bob");
     println!("Bob: {}", bob.to_json());
 
-    println!("list tables {}", r::db("test").table_list().run(&mut conn));
     println!("create table {}", r::db("test").table_create("employees").run(&mut conn));
+
+    println!("create index {}",
+             r::db("test").table("employees").index_create("name").run(&mut conn));
 
     let writes = r::db("test").table("employees").insert(bob.to_json()).run(&mut conn);
     let writes = writes.unwrap();
@@ -55,4 +57,14 @@ pub fn main() {
     let key = writes.generated_keys.get(0);
     println!("get document @ {} {}", key,
              r::db("test").table("employees").get(key.as_slice()).run(&mut conn));
+
+    println!("list indexes {}",
+             r::db("test").table("employees").index_list().run(&mut conn));
+
+    println!("drop index {}",
+             r::db("test").table("employees").index_drop("name").run(&mut conn));
+
+    println!("list indexes {}",
+             r::db("test").table("employees").index_list().run(&mut conn));
+
 }

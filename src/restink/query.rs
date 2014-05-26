@@ -71,7 +71,10 @@ mod term {
         Insert = 56,
         TableCreate = 60,
         TableDrop = 61,
-        TableList = 62
+        TableList = 62,
+        IndexCreate = 75,
+        IndexDrop = 76,
+        IndexList = 77
     }
 
     impl ToJson for FuncType {
@@ -132,6 +135,20 @@ impl Table {
     pub fn insert(self, document: json::Json) -> Func<Writes> {
         let args = vec![document];
         self.term.chain(term::Insert, args)
+    }
+
+    pub fn index_create(self, name: &str) -> Func<()> {
+        let args = vec![name.to_owned().to_json()];
+        self.term.chain(term::IndexCreate, args)
+    }
+
+    pub fn index_drop(self, name: &str) -> Func<()> {
+        let args = vec![name.to_owned().to_json()];
+        self.term.chain(term::IndexDrop, args)
+    }
+
+    pub fn index_list(self) -> Func<Vec<StrBuf>> {
+        self.term.chain(term::IndexList, Vec::new())
     }
 }
 
