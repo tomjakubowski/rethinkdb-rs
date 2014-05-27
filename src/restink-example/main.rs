@@ -11,8 +11,8 @@ use serialize::json::ToJson;
 
 #[deriving(Decodable, Encodable, Show)]
 struct Employee {
-    id: Option<StrBuf>,
-    name: StrBuf
+    id: Option<String>,
+    name: String
 }
 
 impl Employee {

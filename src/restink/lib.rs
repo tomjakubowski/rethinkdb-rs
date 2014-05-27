@@ -46,8 +46,8 @@ trait FromResponse {
 //     }
 // }
 
-impl FromResponse for Vec<StrBuf> {
-    fn from_response(res: Response) -> RdbResult<Vec<StrBuf>> {
+impl FromResponse for Vec<String> {
+    fn from_response(res: Response) -> RdbResult<Vec<String>> {
         use net::{DriverError, ResponseAtom, ResponseSequence};
 
         match res.kind {
@@ -64,7 +64,7 @@ impl FromResponse for Vec<StrBuf> {
                 Err(DriverError(format!("FIXME ResponseSequence {}", res)))
             },
             _ => {
-                Err(DriverError(format!("Couldn't convert {} to Vec<StrBuf>", res)))
+                Err(DriverError(format!("Couldn't convert {} to Vec<String>", res)))
             }
         }
     }

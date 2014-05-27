@@ -99,7 +99,7 @@ impl Database {
         internal::table_drop(name, Some(self))
     }
 
-    pub fn table_list(self) -> Func<Vec<StrBuf>> {
+    pub fn table_list(self) -> Func<Vec<String>> {
         internal::table_list(Some(self))
     }
 
@@ -147,7 +147,7 @@ impl Table {
         self.term.chain(term::IndexDrop, args)
     }
 
-    pub fn index_list(self) -> Func<Vec<StrBuf>> {
+    pub fn index_list(self) -> Func<Vec<String>> {
         self.term.chain(term::IndexList, Vec::new())
     }
 }
@@ -166,7 +166,7 @@ pub fn table_drop(name: &str) -> Func<()> {
     internal::table_drop(name, None)
 }
 
-pub fn table_list() -> Func<Vec<StrBuf>> {
+pub fn table_list() -> Func<Vec<String>> {
     internal::table_list(None)
 }
 
@@ -199,7 +199,7 @@ mod internal {
         }
     }
 
-    pub fn table_list(database: Option<Database>) -> Func<Vec<StrBuf>> {
+    pub fn table_list(database: Option<Database>) -> Func<Vec<String>> {
         let func_args = vec![];
         match database {
             Some(db) => db.term.chain(term::TableList, func_args),
@@ -216,7 +216,7 @@ pub struct Writes {
     pub replaced: uint,
     pub skipped: uint,
     pub unchanged: uint,
-    pub generated_keys: Vec<StrBuf>
+    pub generated_keys: Vec<String>
 }
 
 impl<D: Decoder<E>, E> Decodable<D, E> for Writes {
