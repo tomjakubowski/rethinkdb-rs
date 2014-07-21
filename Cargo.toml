@@ -1,0 +1,15 @@
+[package]
+
+name = "restink"
+version = "0.1.0"
+authors = ["Tom Jakubowski <tom@crystae.net>"]
+
+[[lib]]
+
+name = "restink"
+path = "src/restink/lib.rs"
+
+[[example]]
+
+name = "restink-employees"
+path = "examples/employees.rs"

@@ -1,5 +1,4 @@
 /.rust
-/bin/
-/lib/
 /rethinkdb_data/
 /doc/
+/target/
