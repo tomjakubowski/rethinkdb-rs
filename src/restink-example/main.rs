@@ -1,4 +1,4 @@
-#![crate_id = "restink-example#0.1.0"]
+#![crate_name = "restink-example"]
 #![crate_type = "bin"]
 
 extern crate collections;
@@ -17,22 +17,22 @@ struct Employee {
 
 impl Employee {
     pub fn new(name: &str) -> Employee {
-        Employee { id: None, name: name.to_strbuf() }
+        Employee { id: None, name: name.to_string() }
     }
 }
 
 impl ToJson for Employee {
     fn to_json(&self) -> json::Json {
-        let mut e = box TreeMap::new();
+        let mut e = TreeMap::new();
         match self.id {
             Some(ref id) => {
-                e.insert("id".to_strbuf(), id.to_json());
+                e.insert("id".to_string(), id.to_json());
             },
             _ => {
             }
         };
 
-        e.insert("name".to_strbuf(), self.name.to_json());
+        e.insert("name".to_string(), self.name.to_json());
         json::Object(e)
     }
 }
@@ -54,9 +54,9 @@ pub fn main() {
     let writes = writes.unwrap();
     println!("insert document {}", writes);
 
-    let key = writes.generated_keys.get(0);
+    let key: &str = writes.generated_keys[0].as_slice();
     println!("get document @ {} {}", key,
-             r::db("test").table("employees").get(key.as_slice()).run(&mut conn));
+             r::db("test").table("employees").get(key).run(&mut conn));
 
     println!("list indexes {}",
              r::db("test").table("employees").index_list().run(&mut conn));

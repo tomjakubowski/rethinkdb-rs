@@ -56,8 +56,8 @@ mod term {
             term_args.push_all(args.as_slice());
 
             let term_opt_args = match *opt_args {
-                None => json::Object(box TreeMap::new()),
-                Some(ref ob) => json::Object(box ob.clone())
+                None => json::Object(TreeMap::new()),
+                Some(ref ob) => json::Object(ob.clone())
             };
 
             json::List(vec![func_type.to_json(), term_args.to_json(), term_opt_args.to_json()])
@@ -79,12 +79,13 @@ mod term {
 
     impl ToJson for FuncType {
         fn to_json(&self) -> json::Json {
-            json::Number(*self as f64)
+            json::Number(*self as u32 as f64)
         }
     }
-
 }
 
+#[deriving(Show)]
+pub struct Document(pub json::Json);
 
 pub struct Database {
     term: Func<json::Json>
@@ -113,7 +114,7 @@ impl ToJson for Database {
 }
 
 pub fn db(name: &str) -> Database {
-    let args = vec![name.to_strbuf().to_json()];
+    let args = vec![name.to_string().to_json()];
     Database {
         term: Func::start(term::Db, args)
     }
@@ -128,8 +129,8 @@ pub fn table(name: &str) -> Table {
 }
 
 impl Table {
-    pub fn get(self, key: &str) -> Func<json::Json> {
-        self.term.chain(term::Get, vec![key.to_strbuf().to_json()])
+    pub fn get(self, key: &str) -> Func<Document> {
+        self.term.chain(term::Get, vec![key.to_string().to_json()])
     }
 
     pub fn insert(self, document: json::Json) -> Func<Writes> {
@@ -175,7 +176,7 @@ mod internal {
     use super::{Database, Func, Table, term};
 
     pub fn table(name: &str, database: Option<Database>) -> Table {
-        let func_args = vec![name.to_strbuf().to_json()];
+        let func_args = vec![name.to_string().to_json()];
         let term = match database {
             Some(db) => db.term.chain(term::Table, func_args),
             None => Func::start(term::Table, func_args)
@@ -184,7 +185,7 @@ mod internal {
     }
 
     pub fn table_create(name: &str, database: Option<Database>) -> Func<()> {
-        let func_args = vec![name.to_strbuf().to_json()];
+        let func_args = vec![name.to_string().to_json()];
         match database {
             Some(db) => db.term.chain(term::TableCreate, func_args),
             None => Func::start(term::TableCreate, func_args)
@@ -192,7 +193,7 @@ mod internal {
     }
 
     pub fn table_drop(name: &str, database: Option<Database>) -> Func<()> {
-        let func_args = vec![name.to_strbuf().to_json()];
+        let func_args = vec![name.to_string().to_json()];
         match database {
             Some(db) => db.term.chain(term::TableDrop, func_args),
             None => Func::start(term::TableDrop, func_args)

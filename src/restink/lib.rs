@@ -1,6 +1,5 @@
-#![crate_id = "restink#0.1.0"]
+#![crate_name = "restink"]
 #![crate_type = "lib"]
-#![allow(attribute_usage)]
 
 extern crate collections;
 extern crate serialize;
@@ -54,10 +53,10 @@ impl FromResponse for Vec<String> {
             ResponseAtom => {
                 // vvv bad
                 let list = res.values.as_list().unwrap();
-                let list = list.get(0).as_list().unwrap();
+                let list = list[0].as_list().unwrap();
 
                 Ok(list.iter().map(|s| {
-                    s.as_string().unwrap().to_strbuf()
+                    s.as_string().unwrap().to_string()
                 }).collect())
             },
             ResponseSequence => {
@@ -75,7 +74,7 @@ impl FromResponse for query::Writes {
     fn from_response(res: Response) -> RdbResult<query::Writes> {
         use serialize::Decodable;
         let list = res.values.as_list().unwrap();
-        let mut decoder = json::Decoder::new(list.get(0).clone()); // FIXME
+        let mut decoder = json::Decoder::new(list[0].clone()); // FIXME
         let insertion: query::Writes = Decodable::decode(&mut decoder).unwrap(); // FIXME
         Ok(insertion)
     }
@@ -87,6 +86,12 @@ impl FromResponse for Response {
 
 impl FromResponse for json::Json {
     fn from_response(res: Response) -> RdbResult<json::Json> { Ok(res.values) }
+}
+
+impl FromResponse for query::Document {
+    fn from_response(res: Response) -> RdbResult<query::Document> {
+        Ok(query::Document(res.values))
+    }
 }
 
 impl FromResponse for () {

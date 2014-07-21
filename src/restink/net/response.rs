@@ -24,7 +24,7 @@ impl Error {
     pub fn new(kind: int, res: Json) -> Error {
         let msgs = res.as_list();
         let msg = match msgs.map(|x| x.as_slice()) {
-            Some([json::String(ref x)]) => x.to_owned(),
+            Some([json::String(ref x)]) => x.to_string(),
             _ => {
                 return ProtocolError(format!("couldn't find error message in {}", res));
             }
@@ -39,7 +39,7 @@ impl Error {
     }
 }
 
-#[deriving(Show, Eq)]
+#[deriving(Show, PartialEq, Eq)]
 pub enum ResponseKind {
     ResponseAtom,
     ResponseSequence,
@@ -54,8 +54,8 @@ struct RawResponse {
 
 impl RawResponse {
     fn from_json(json: Json) -> RdbResult<RawResponse> {
-        let values = (json.find(&"t".to_strbuf()).and_then(|x| x.as_number()),
-                      json.find(&"r".to_strbuf()));
+        let values = (json.find(&"t".to_string()).and_then(|x| x.as_number()),
+                      json.find(&"r".to_string()));
 
         match values {
             (Some(t), Some(r)) => {
@@ -105,8 +105,8 @@ mod test {
     fn test_raw_response_from_json() {
         let json = json::from_str(r#"{"t": 1, "r": [["bar","foo"]]}"#).unwrap();
         let raw_res = RawResponse::from_json(json).unwrap();
-        let tables = json::List(vec![json::String("bar".to_strbuf()),
-                                     json::String("foo".to_strbuf())]);
+        let tables = json::List(vec![json::String("bar".to_string()),
+                                     json::String("foo".to_string())]);
 
         assert_eq!(raw_res.res_type, 1);
         assert_eq!(raw_res.res, json::List(vec![tables]));
@@ -116,8 +116,8 @@ mod test {
     fn test_success_from_json() {
         let json = json::from_str(r#"{"t": 1, "r": [["bar","foo"]]}"#).unwrap();
         let res = Response::from_json(json).unwrap();
-        let tables = json::List(vec![json::String("bar".to_strbuf()),
-                                     json::String("foo".to_strbuf())]);
+        let tables = json::List(vec![json::String("bar".to_string()),
+                                     json::String("foo".to_string())]);
 
         let Response { kind: kind, values: values } = res;
 

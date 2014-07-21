@@ -39,9 +39,10 @@ impl Connection {
         use j = serialize::json;
         use std::str;
 
-        let mut global_optargs = box TreeMap::new();
-        global_optargs.insert("db".to_strbuf(), j::List(vec![j::Number(14.),
-                                               j::List(vec![j::String("test".to_strbuf())])]));
+        let mut global_optargs = TreeMap::new();
+        global_optargs.insert("db".to_string(),
+                              j::List(vec![j::Number(14.),
+                                           j::List(vec![j::String("test".to_string())])]));
         let global_optargs = j::Object(global_optargs);
 
         let query = j::List(vec![j::Number(1.), term, global_optargs]);
@@ -57,18 +58,17 @@ impl Connection {
     }
 
     fn execute_json(&mut self, json: Json) -> IoResult<Vec<u8>> {
-        let json_strbuf = json.to_str().to_strbuf();
+        let json_strbuf = json.to_string();
         self.execute_raw(json_strbuf.as_bytes())
     }
 
     fn execute_raw(&mut self, query: &[u8]) -> IoResult<Vec<u8>> {
-        let buf: ~[u8] = query.clone().to_owned();
         let token = 666;
-        let query_size = buf.len().to_i32().unwrap();
+        let query_size = query.len().to_i32().unwrap();
 
         try!(self.stream.write_le_i64(token));
         try!(self.stream.write_le_i32(query_size));
-        try!(self.stream.write(buf));
+        try!(self.stream.write(query));
         try!(self.stream.flush());
 
         let _recv_token = try!(self.stream.read_le_i64());
@@ -122,7 +122,7 @@ pub fn connect(host: &str, port: u16) -> RdbResult<Connection> {
     match str::from_utf8(response.as_slice()) {
         Some("SUCCESS") => { },
         _ => {
-            return Err(ProtocolError("handshake error".to_owned()));
+            return Err(ProtocolError("handshake error".to_string()));
         }
     };
     Ok(conn)
