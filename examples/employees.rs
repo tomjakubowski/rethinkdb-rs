@@ -1,4 +1,4 @@
-#![crate_name = "restink-example"]
+#![crate_name = "restink-employees"]
 #![crate_type = "bin"]
 
 extern crate collections;
