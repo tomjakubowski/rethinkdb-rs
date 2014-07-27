@@ -1,5 +1,3 @@
-extern crate serialize;
-
 use std::io;
 
 use serialize::json;

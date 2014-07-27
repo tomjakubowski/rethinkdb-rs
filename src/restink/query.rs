@@ -1,5 +1,3 @@
-extern crate serialize;
-
 pub use self::term::{Func, FuncType};
 
 use serialize::{Decodable, Decoder};

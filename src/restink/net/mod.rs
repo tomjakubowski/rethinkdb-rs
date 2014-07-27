@@ -1,5 +1,3 @@
-extern crate serialize;
-
 pub use self::response::{Error, DriverError, ProtocolError};
 pub use self::response::RdbResult;
 pub use self::response::Response;
