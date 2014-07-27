@@ -41,30 +41,30 @@ pub fn main() {
     use r = restink::query;
 
     let mut conn = restink::connect("127.0.0.1", 28015).unwrap();
+    // Example usage... we can't actually create DBs yet, so go with the default
+    conn.use_db("phillips_broadcasting");
+    conn.use_db("test");
 
-    let bob = Employee::new("Bob");
-    println!("Bob: {}", bob.to_json());
+    let jay = Employee::new("Jay Sherman");
+    println!("Jay: {}", jay.to_json());
+    let duke = Employee::new("Duke Phillips");
+    println!("Duke: {}", duke.to_json());
 
-    println!("create table {}", r::db("test").table_create("employees").run(&mut conn));
+    println!("create table {}", r::table_create("employees").run(&mut conn));
+    println!("create index {}", r::table("employees").index_create("name").run(&mut conn));
 
-    println!("create index {}",
-             r::db("test").table("employees").index_create("name").run(&mut conn));
+    let writes = r::table("employees").insert(jay.to_json()).run(&mut conn);
+    let writes = writes.unwrap();
+    println!("insert document {}", writes);
 
-    let writes = r::db("test").table("employees").insert(bob.to_json()).run(&mut conn);
+    let writes = r::table("employees").insert(duke.to_json()).run(&mut conn);
     let writes = writes.unwrap();
     println!("insert document {}", writes);
 
     let key: &str = writes.generated_keys[0].as_slice();
-    println!("get document @ {} {}", key,
-             r::db("test").table("employees").get(key).run(&mut conn));
-
-    println!("list indexes {}",
-             r::db("test").table("employees").index_list().run(&mut conn));
-
-    println!("drop index {}",
-             r::db("test").table("employees").index_drop("name").run(&mut conn));
-
-    println!("list indexes {}",
-             r::db("test").table("employees").index_list().run(&mut conn));
-
+    println!("get document @ {} {}", key, r::table("employees").get(key).run(&mut conn));
+    println!("list indexes {}", r::table("employees").index_list().run(&mut conn));
+    println!("drop index {}", r::table("employees").index_drop("name").run(&mut conn));
+    println!("list indexes {}", r::table("employees").index_list().run(&mut conn));
+    println!("table drop {}", r::table_drop("employees").run(&mut conn));
 }
