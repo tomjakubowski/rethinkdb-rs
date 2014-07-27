@@ -1,8 +1,5 @@
 extern crate serialize;
 
-#[cfg(test)]
-extern crate collections;
-
 use std::io;
 
 use serialize::json;

@@ -1,4 +1,3 @@
-extern crate collections;
 extern crate serialize;
 
 pub use self::term::{Func, FuncType};
@@ -46,7 +45,7 @@ mod term {
 
     impl<T> ToJson for Func<T> {
         fn to_json(&self) -> json::Json {
-            use collections::TreeMap;
+            use std::collections::TreeMap;
 
             let Func { func_type, ref prev, ref args, ref opt_args } = *self;
             let mut term_args = match *prev {

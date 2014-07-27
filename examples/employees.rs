@@ -1,11 +1,10 @@
 #![crate_name = "restink-employees"]
 #![crate_type = "bin"]
 
-extern crate collections;
 extern crate restink;
 extern crate serialize;
 
-use collections::TreeMap;
+use std::collections::TreeMap;
 use serialize::json;
 use serialize::json::ToJson;
 

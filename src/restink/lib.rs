@@ -1,6 +1,5 @@
 #![crate_name = "restink"]
 
-extern crate collections;
 extern crate serialize;
 
 pub use net::connect;
