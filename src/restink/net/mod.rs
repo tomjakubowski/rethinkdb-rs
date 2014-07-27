@@ -1,4 +1,3 @@
-extern crate collections;
 extern crate serialize;
 
 pub use self::response::{Error, DriverError, ProtocolError};
@@ -6,7 +5,7 @@ pub use self::response::RdbResult;
 pub use self::response::Response;
 pub use self::response::{ResponseKind, ResponseAtom, ResponseSequence};
 
-use collections::TreeMap;
+use std::collections::TreeMap;
 
 use serialize::json;
 use serialize::json::{Json, ToJson};
@@ -22,7 +21,22 @@ static PROTOCOL_MAGIC_NUMBER: i32 = 0x7e6970c7; // JSON
 
 pub struct Connection {
     stream: BufferedStream<TcpStream>,
-    db: String
+    opt_args: OptArgs
+}
+
+struct OptArgs {
+    db: Option<String>
+}
+
+impl<'a> ToJson for &'a OptArgs {
+    fn to_json(&self) -> json::Json {
+        let mut d = TreeMap::new();
+        if self.db.is_some() {
+            let term_type = 14u8; // FIXME: DB
+            d.insert("db".to_string(), (term_type, (self.db.clone(),)).to_json());
+        }
+        json::Object(d)
+    }
 }
 
 impl fmt::Show for Connection {
@@ -38,24 +52,14 @@ pub fn run(conn: &mut Connection, term: Json) -> RdbResult<Response> {
 impl Connection {
     /// Sets the default database on this connection.
     pub fn use_db<S: StrAllocating>(&mut self, db: S) {
-        self.db = db.into_string();
+        self.opt_args.db = Some(db.into_string());
     }
 
     fn run(&mut self, term: Json) -> RdbResult<Response> {
-        use j = serialize::json;
         use std::str;
 
-        // FIXME: why not just store a struct containing global_optargs
-        // on Connection?
-        let mut global_optargs = TreeMap::new();
-        let db_term = 14u8; // FIXME
-        let db_arg = (db_term, (self.db.clone(), ));
-        global_optargs.insert("db".to_string(), db_arg.to_json());
-
-        let global_optargs = j::Object(global_optargs);
-
         let query_type = 1u8; // FIXME: START
-        let query = (query_type, term, global_optargs).to_json();
+        let query = (query_type, term, &self.opt_args).to_json();
 
         let res = self.execute_json(query).map(|buf| {
             let str_res = str::from_utf8(buf.as_slice()).unwrap();
@@ -116,11 +120,14 @@ pub fn connect(host: &str, port: u16) -> RdbResult<Connection> {
     use self::response::ProtocolError;
     use std::str;
 
-    let db = "test".to_string();
-
-    fn make_conn(host: &str, port: u16, db: String) -> IoResult<Connection> {
+    fn make_conn(host: &str, port: u16) -> IoResult<Connection> {
         let stream = try!(TcpStream::connect(host, port));
-        Ok(Connection { stream: BufferedStream::new(stream), db: db })
+        Ok(Connection {
+            stream: BufferedStream::new(stream),
+            opt_args: OptArgs {
+                db: None
+            }
+        })
     }
 
     fn shake_hands(conn: &mut Connection) -> IoResult<Vec<u8>> {
@@ -128,7 +135,7 @@ pub fn connect(host: &str, port: u16) -> RdbResult<Connection> {
         conn.read_handshake_reply()
     }
 
-    let mut conn = try!(make_conn(host, port, db).map_err(response::IoError));
+    let mut conn = try!(make_conn(host, port).map_err(response::IoError));
     let response = try!(shake_hands(&mut conn).map_err(response::IoError));
 
     match str::from_utf8(response.as_slice()) {

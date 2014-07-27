@@ -41,7 +41,8 @@ pub fn main() {
     use r = restink::query;
 
     let mut conn = restink::connect("127.0.0.1", 28015).unwrap();
-    // Example usage... we can't actually create DBs yet, so go with the default
+    // Example usage... we can't actually create DBs yet, so in the
+    // end stick with "test" which should already exist.
     conn.use_db("phillips_broadcasting");
     conn.use_db("test");
 
