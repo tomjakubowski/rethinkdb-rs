@@ -20,8 +20,12 @@ pub enum Error {
     IoError(io::IoError)
 }
 
+static CLIENT_ERROR: u8 = 16;
+static COMPILE_ERROR: u8 = 17;
+static RUNTIME_ERROR: u8 = 18;
+
 impl Error {
-    pub fn new(kind: int, res: Json) -> Error {
+    pub fn new(kind: u8, res: Json) -> Error {
         let msgs = res.as_list();
         let msg = match msgs.map(|x| x.as_slice()) {
             Some([json::String(ref x)]) => x.to_string(),
@@ -31,9 +35,9 @@ impl Error {
         };
 
         match kind {
-            16 => ClientError(msg),
-            17 => CompileError(msg),
-            18 => RuntimeError(msg),
+            CLIENT_ERROR => ClientError(msg),
+            COMPILE_ERROR => CompileError(msg),
+            RUNTIME_ERROR => RuntimeError(msg),
             _ => ProtocolError(format!("unrecognized error number: {}", kind))
         }
     }
@@ -48,7 +52,7 @@ pub enum ResponseKind {
 
 #[deriving(Show)]
 struct RawResponse {
-    res_type: int,
+    res_type: u8,
     res: Json
 }
 
@@ -59,7 +63,7 @@ impl RawResponse {
 
         match values {
             (Some(t), Some(r)) => {
-                Ok(RawResponse { res_type: t as int, res: r.clone() })
+                Ok(RawResponse { res_type: t as u8, res: r.clone() })
             },
             _ => {
                 let msg = format!("JSON decoding error: {}", json);
@@ -75,13 +79,17 @@ pub struct Response {
     pub values: Json
 }
 
+static SUCCESS_ATOM: u8 = 1;
+static SUCCESS_SEQUENCE: u8 = 2;
+static SUCCESS_PARTIAL: u8 = 3;
+
 impl Response {
     pub fn from_json(json: Json) -> RdbResult<Response> {
         RawResponse::from_json(json).and_then(|raw: RawResponse| {
             match raw.res_type {
-                1 => Ok(Response::new(ResponseAtom, raw.res)),
-                2 => Ok(Response::new(ResponseSequence, raw.res)),
-                3 => Ok(Response::new(ResponsePartial, raw.res)),
+                SUCCESS_ATOM => Ok(Response::new(ResponseAtom, raw.res)),
+                SUCCESS_SEQUENCE => Ok(Response::new(ResponseSequence, raw.res)),
+                SUCCESS_PARTIAL => Ok(Response::new(ResponsePartial, raw.res)),
                 n => Err(Error::new(n, raw.res))
             }
         })
