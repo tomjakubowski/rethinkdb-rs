@@ -1,7 +1,8 @@
-pub use self::response::{Error, DriverError, ProtocolError};
-pub use self::response::RdbResult;
-pub use self::response::Response;
-pub use self::response::{ResponseKind, ResponseAtom, ResponseSequence};
+pub use self::response::{Error, DriverError, ProtocolError, RdbResult,
+                         Response, ResponseKind, ResponseAtom,
+                         ResponseSequence};
+
+use super::term;
 
 use std::collections::TreeMap;
 
@@ -30,7 +31,7 @@ impl<'a> ToJson for &'a OptArgs {
     fn to_json(&self) -> json::Json {
         let mut d = TreeMap::new();
         if self.db.is_some() {
-            let term_type = 14u8; // FIXME: DB
+            let term_type = term::Db;
             d.insert("db".to_string(), (term_type, (self.db.clone(),)).to_json());
         }
         json::Object(d)
@@ -75,7 +76,7 @@ impl Connection {
     }
 
     fn execute_raw(&mut self, query: &[u8]) -> IoResult<Vec<u8>> {
-        let token = 666;
+        let token = 666; // FIXME: use a unique, incrementing token
         let query_size = query.len().to_i32().unwrap();
 
         try!(self.stream.write_le_i64(token));
