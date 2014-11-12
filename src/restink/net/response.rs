@@ -15,9 +15,9 @@ pub enum Error {
     IoError(io::IoError)
 }
 
-static CLIENT_ERROR: u8 = 16;
-static COMPILE_ERROR: u8 = 17;
-static RUNTIME_ERROR: u8 = 18;
+const CLIENT_ERROR: u8 = 16;
+const COMPILE_ERROR: u8 = 17;
+const RUNTIME_ERROR: u8 = 18;
 
 impl Error {
     pub fn new(kind: u8, res: Json) -> Error {
@@ -53,8 +53,8 @@ struct RawResponse {
 
 impl RawResponse {
     fn from_json(json: Json) -> RdbResult<RawResponse> {
-        let values = (json.find(&"t".to_string()).and_then(|x| x.as_number()),
-                      json.find(&"r".to_string()));
+        let values = (json.find("t").and_then(|x| x.as_u64()),
+                      json.find("r"));
 
         match values {
             (Some(t), Some(r)) => {
@@ -74,9 +74,9 @@ pub struct Response {
     pub values: Json
 }
 
-static SUCCESS_ATOM: u8 = 1;
-static SUCCESS_SEQUENCE: u8 = 2;
-static SUCCESS_PARTIAL: u8 = 3;
+const SUCCESS_ATOM: u8 = 1;
+const SUCCESS_SEQUENCE: u8 = 2;
+const SUCCESS_PARTIAL: u8 = 3;
 
 impl Response {
     pub fn from_json(json: Json) -> RdbResult<Response> {

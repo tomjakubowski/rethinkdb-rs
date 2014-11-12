@@ -1,13 +1,17 @@
 use serialize::json;
 use serialize::json::{Json,ToJson};
 
+use RdbResult;
+use from_response::FromResponse;
+use net::{mod, Connection};
+
 pub type Datum = json::Json;
 
 pub struct Func<Out> {
     func_type: FuncType,
     prev: Option<Json>,
     args: Vec<Datum>,
-    opt_args: Option<json::Object>
+    opt_args: Option<json::JsonObject>
 }
 
 impl<Out, In> Func<In> {
@@ -29,6 +33,13 @@ impl<Out> Func<Out> {
             args: args,
             opt_args: None
         }
+    }
+}
+
+impl<Out: FromResponse> Func<Out> {
+    pub fn run(self, conn: &mut Connection) -> RdbResult<Out> {
+        net::run(conn, self.to_json())
+            .and_then(FromResponse::from_response)
     }
 }
 
@@ -67,6 +78,6 @@ pub enum FuncType {
 
 impl ToJson for FuncType {
     fn to_json(&self) -> json::Json {
-        json::Number(*self as u32 as f64)
+        json::U64(*self as u32 as u64)
     }
 }

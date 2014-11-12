@@ -37,7 +37,7 @@ impl ToJson for Employee {
 }
 
 pub fn main() {
-    use r = restink::query;
+    use restink::query as r;
 
     let mut conn = restink::connect("127.0.0.1", 28015).unwrap();
     // Example usage... we can't actually create DBs yet, so in the

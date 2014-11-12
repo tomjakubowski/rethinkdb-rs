@@ -59,12 +59,12 @@ impl Table {
     }
 
     pub fn index_create(self, name: &str) -> Func<()> {
-        let args = vec![name.to_owned().to_json()];
+        let args = vec![name.into_string().to_json()];
         self.term.chain(term::IndexCreate, args)
     }
 
     pub fn index_drop(self, name: &str) -> Func<()> {
-        let args = vec![name.to_owned().to_json()];
+        let args = vec![name.into_string().to_json()];
         self.term.chain(term::IndexDrop, args)
     }
 

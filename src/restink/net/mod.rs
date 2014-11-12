@@ -120,7 +120,7 @@ pub fn connect(host: &str, port: u16) -> RdbResult<Connection> {
     use std::str;
 
     fn make_conn(host: &str, port: u16) -> IoResult<Connection> {
-        let stream = try!(TcpStream::connect(host, port));
+        let stream = try!(TcpStream::connect((host, port)));
         Ok(Connection {
             stream: BufferedStream::new(stream),
             opt_args: OptArgs {

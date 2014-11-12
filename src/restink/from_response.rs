@@ -1,8 +1,8 @@
-use super::net::{mod, Connection, RdbResult, Response};
+use super::net::{RdbResult, Response};
 use super::query;
-use serialize::json::{mod, ToJson};
+use serialize::json;
 
-trait FromResponse {
+pub trait FromResponse {
     fn from_response(res: Response) -> RdbResult<Self>;
 }
 
@@ -57,11 +57,4 @@ impl FromResponse for query::Document {
 
 impl FromResponse for () {
     fn from_response(_: Response) -> RdbResult<()> { Ok(()) }
-}
-
-impl<Out: FromResponse> query::Func<Out> {
-    pub fn run(self, conn: &mut Connection) -> RdbResult<Out> {
-        net::run(conn, self.to_json())
-            .and_then(FromResponse::from_response)
-    }
 }

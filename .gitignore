@@ -2,3 +2,4 @@
 /rethinkdb_data/
 /doc/
 /target/
+Cargo.lock
