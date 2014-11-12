@@ -1,15 +1,15 @@
 [package]
 
-name = "restink"
+name = "rethinkdb"
 version = "0.1.0"
 authors = ["Tom Jakubowski <tom@crystae.net>"]
 
 [lib]
 
-name = "restink"
-path = "src/restink/lib.rs"
+name = "rethinkdb"
+path = "src/rethinkdb/lib.rs"
 
 [[example]]
 
-name = "restink-employees"
+name = "rethinkdb-employees"
 path = "examples/employees.rs"

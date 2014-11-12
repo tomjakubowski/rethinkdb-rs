@@ -1,5 +1,3 @@
-#![crate_name = "restink"]
-
 extern crate serialize;
 
 pub use net::connect;
