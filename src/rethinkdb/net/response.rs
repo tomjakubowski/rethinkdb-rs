@@ -122,7 +122,7 @@ mod test {
         let tables = json::List(vec![json::String("bar".to_string()),
                                      json::String("foo".to_string())]);
 
-        let Response { kind: kind, values: values } = res;
+        let Response { kind, values } = res;
 
         assert_eq!(kind, ResponseAtom);
         assert_eq!(values, json::List(vec![tables]));

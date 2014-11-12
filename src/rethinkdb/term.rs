@@ -63,6 +63,7 @@ impl<T> ToJson for Func<T> {
     }
 }
 
+#[repr(u64)]
 pub enum FuncType {
     Db = 14,
     Table = 15,
@@ -78,6 +79,6 @@ pub enum FuncType {
 
 impl ToJson for FuncType {
     fn to_json(&self) -> json::Json {
-        json::U64(*self as u32 as u64)
+        json::U64(*self as u64)
     }
 }
