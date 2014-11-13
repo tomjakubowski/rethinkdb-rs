@@ -11,5 +11,5 @@ path = "src/rethinkdb/lib.rs"
 
 [[example]]
 
-name = "rethinkdb-employees"
+name = "employees"
 path = "examples/employees.rs"
