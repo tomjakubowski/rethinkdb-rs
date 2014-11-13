@@ -1,5 +1,6 @@
-use super::net::{RdbResult, Response};
-use super::query;
+use errors::RdbResult;
+use net::Response;
+use query;
 use serialize::json;
 
 pub trait FromResponse {
@@ -8,7 +9,8 @@ pub trait FromResponse {
 
 impl FromResponse for Vec<String> {
     fn from_response(res: Response) -> RdbResult<Vec<String>> {
-        use net::{DriverError, ResponseAtom, ResponseSequence};
+        use errors::DriverError;
+        use net::{ResponseAtom, ResponseSequence};
 
         match res.kind {
             ResponseAtom => {
