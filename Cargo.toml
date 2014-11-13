@@ -7,7 +7,7 @@ authors = ["Tom Jakubowski <tom@crystae.net>"]
 [lib]
 
 name = "rethinkdb"
-path = "src/rethinkdb/lib.rs"
+path = "src/lib.rs"
 
 [[example]]
 
