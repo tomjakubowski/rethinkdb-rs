@@ -1,8 +1,6 @@
-pub use self::response::{Error, DriverError, ProtocolError, RdbResult,
-                         Response, ResponseKind, ResponseAtom,
-                         ResponseSequence};
-
-use super::term;
+use errors::{ProtocolError, RdbResult};
+pub use self::response::{Response, ResponseKind, ResponseAtom, ResponseSequence};
+use term;
 
 use std::collections::TreeMap;
 
@@ -55,21 +53,20 @@ impl Connection {
     }
 
     fn run(&mut self, term: Json) -> RdbResult<Response> {
-        use std::str;
-
         const START: u8 = 1;
 
         let query_type = START;
         let query = (query_type, term, &self.opt_args).to_json();
 
-        let res = self.execute_json(query).map(|buf| {
-            let str_res = str::from_utf8(buf.as_slice()).unwrap();
-            json::from_str(str_res).unwrap()
-        });
+        let response_buf = try!(self.execute_json(query));
+        let response_json = {
+            use std::io::MemReader;
+            let mut reader = MemReader::new(response_buf);
+            // FIXME: unwrap; add an impl FromError<json::DecoderError> for errors::Error
+            json::from_reader(&mut reader).unwrap()
+        };
 
-        let res = res.map_err(response::IoError); // FIXME: use FromError
-
-        res.and_then(Response::from_json)
+        Response::from_json(response_json)
     }
 
     fn execute_json(&mut self, json: Json) -> IoResult<Vec<u8>> {
@@ -119,8 +116,6 @@ impl Connection {
 }
 
 pub fn connect(host: &str, port: u16) -> RdbResult<Connection> {
-    use self::response::ProtocolError;
-
     fn make_conn(host: &str, port: u16) -> IoResult<Connection> {
         let stream = try!(TcpStream::connect((host, port)));
         Ok(Connection {
@@ -132,11 +127,9 @@ pub fn connect(host: &str, port: u16) -> RdbResult<Connection> {
         })
     }
 
-    let mut conn = try!(make_conn(host, port).map_err(response::IoError)); // FIXME: FromError
-    // FIXME: FromError
-    try!(conn.write_handshake().map_err(response::IoError));
-    // FIXME: FromError
-    let response = try!(conn.read_handshake_reply().map_err(response::IoError));
+    let mut conn = try!(make_conn(host, port));
+    try!(conn.write_handshake());
+    let response = try!(conn.read_handshake_reply());
 
     match response.as_slice() {
         b"SUCCESS" => { },
