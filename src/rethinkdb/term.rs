@@ -38,8 +38,7 @@ impl<Out> Func<Out> {
 
 impl<Out: FromResponse> Func<Out> {
     pub fn run(self, conn: &mut Connection) -> RdbResult<Out> {
-        net::run(conn, self.to_json())
-            .and_then(FromResponse::from_response)
+        net::run(conn, self.to_json()).and_then(FromResponse::from_response)
     }
 }
 

@@ -5,8 +5,11 @@ use serialize::json::Json;
 
 pub type RdbResult<A> = Result<A, Error>;
 
+// FIXME: impl FromError<IoError> et al
+// FIXME: this should live somewhere else
 #[deriving(Show)]
 pub enum Error {
+    // FIXME: JSON decoding error + the like?
     ClientError(String),
     CompileError(String),
     RuntimeError(String),

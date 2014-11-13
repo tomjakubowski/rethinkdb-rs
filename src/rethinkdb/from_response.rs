@@ -12,7 +12,7 @@ impl FromResponse for Vec<String> {
 
         match res.kind {
             ResponseAtom => {
-                // vvv bad
+                // vvv bad (FIXME)
                 let list = res.values.as_list().unwrap();
                 let list = list[0].as_list().unwrap();
 
@@ -31,7 +31,7 @@ impl FromResponse for Vec<String> {
 }
 
 impl FromResponse for query::Writes {
-    // vvvv this is all very very bad
+    // vvvv this is all very very bad (FIXME)
     fn from_response(res: Response) -> RdbResult<query::Writes> {
         use serialize::Decodable;
         let list = res.values.as_list().unwrap();

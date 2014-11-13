@@ -132,27 +132,27 @@ mod internal {
 
 #[deriving(Show)]
 pub struct Writes {
-    pub deleted: uint,
-    pub errors: uint,
-    pub inserted: uint,
-    pub replaced: uint,
-    pub skipped: uint,
-    pub unchanged: uint,
+    pub deleted: u64,
+    pub errors: u64,
+    pub inserted: u64,
+    pub replaced: u64,
+    pub skipped: u64,
+    pub unchanged: u64,
     pub generated_keys: Vec<String>
 }
 
 impl<D: Decoder<E>, E> Decodable<D, E> for Writes {
     fn decode(d: &mut D) -> Result<Writes, E> {
-        d.read_struct("Writes", 7u, |d| {
+        d.read_struct("Writes", 7, |d| {
             Ok(Writes {
-                deleted: try!(d.read_struct_field("deleted", 0u, |d| Decodable::decode(d))),
-                errors: try!(d.read_struct_field("errors", 1u, |d| Decodable::decode(d))),
-                inserted: try!(d.read_struct_field("inserted", 2u, |d| Decodable::decode(d))),
-                replaced: try!(d.read_struct_field("replaced", 3u, |d| Decodable::decode(d))),
-                skipped: try!(d.read_struct_field("skipped", 4u, |d| Decodable::decode(d))),
-                unchanged: try!(d.read_struct_field("unchanged", 5u, |d| Decodable::decode(d))),
+                deleted: try!(d.read_struct_field("deleted", 0, Decodable::decode)),
+                errors: try!(d.read_struct_field("errors", 1, Decodable::decode)),
+                inserted: try!(d.read_struct_field("inserted", 2, Decodable::decode)),
+                replaced: try!(d.read_struct_field("replaced", 3, Decodable::decode)),
+                skipped: try!(d.read_struct_field("skipped", 4, Decodable::decode)),
+                unchanged: try!(d.read_struct_field("unchanged", 5, Decodable::decode)),
                 generated_keys: {
-                    match d.read_struct_field("generated_keys", 6u, |d| Decodable::decode(d)) {
+                    match d.read_struct_field("generated_keys", 6, Decodable::decode) {
                         Ok(opt) => opt,
                         Err(_) => Vec::new()
                     }
