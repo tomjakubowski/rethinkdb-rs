@@ -161,3 +161,31 @@ impl<D: Decoder<E>, E> Decodable<D, E> for Writes {
         })
     }
 }
+
+#[cfg(test)]
+mod test {
+    #[phase(plugin)] extern crate json_macros;
+
+    use query as r;
+    use serialize::json::ToJson;
+
+    #[test]
+    fn test_db() {
+        assert_eq!(r::db("test").to_json(), json!([14, ["test"]]));
+        assert_eq!(r::db("foo").table("bar").to_json(), json!([15, [[14, ["foo"]], "bar"]]));
+        assert_eq!(r::db("foo").table_create("bar").to_json(), json!([60, [[14, ["foo"]], "bar"]]));
+        assert_eq!(r::db("foo").table_drop("bar").to_json(), json!([61, [[14, ["foo"]], "bar"]]));
+        assert_eq!(r::db("foo").table_list().to_json(), json!([62, [[14, ["foo"]]]]));
+    }
+
+    #[test]
+    fn test_table() {
+        assert_eq!(r::table("foo").to_json(), json!([15, ["foo"]]));
+        assert_eq!(r::table("test").get("deadbeef").to_json(), json!([16, [[15, ["test"]], "deadbeef"]]));
+        assert_eq!(r::table("test").insert(json!({ "foo": "bar" })).to_json(), json!([56, [[15, ["test"]], {"foo": "bar"}]]));
+        assert_eq!(r::table("test").index_create("bar").to_json(), json!([75, [[15, ["test"]], "bar"]]));
+        assert_eq!(r::table("test").index_drop("bar").to_json(), json!([76, [[15, ["test"]], "bar"]]));
+        assert_eq!(r::table("test").index_list().to_json(), json!([77, [[15, ["test"]]]]));
+    }
+}
+
