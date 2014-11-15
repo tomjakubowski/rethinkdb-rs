@@ -8,8 +8,12 @@ authors = ["Tom Jakubowski <tom@crystae.net>"]
 
 name = "rethinkdb"
 path = "src/rethinkdb/lib.rs"
+doctest = false # FIXME
 
 [[example]]
 
 name = "employees"
 path = "examples/employees.rs"
+
+[dev-dependencies.json_macros]
+git = "https://github.com/tomjakubowski/json_macros"

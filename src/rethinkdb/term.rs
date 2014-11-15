@@ -38,15 +38,12 @@ impl<Out> Func<Out> {
 
 impl<Out: FromResponse> Func<Out> {
     pub fn run(self, conn: &mut Connection) -> RdbResult<Out> {
-        net::run(conn, self.to_json())
-            .and_then(FromResponse::from_response)
+        net::run(conn, self.to_json()).and_then(FromResponse::from_response)
     }
 }
 
 impl<T> ToJson for Func<T> {
     fn to_json(&self) -> json::Json {
-        use std::collections::TreeMap;
-
         let Func { func_type, ref prev, ref args, ref opt_args } = *self;
         let mut term_args = match *prev {
             Some(ref f) => { vec![f.to_json()] },
@@ -54,16 +51,16 @@ impl<T> ToJson for Func<T> {
         };
         term_args.push_all(args.as_slice());
 
-        let term_opt_args = match *opt_args {
-            None => json::Object(TreeMap::new()),
-            Some(ref ob) => json::Object(ob.clone())
-        };
-
-        json::List(vec![func_type.to_json(), term_args.to_json(), term_opt_args.to_json()])
+        match *opt_args {
+            None => (func_type.to_json(), term_args.to_json()).to_json(),
+            Some(ref ob) => {
+                (func_type.to_json(), term_args.to_json(), ob.to_json()).to_json()
+            }
+        }
     }
 }
 
-#[repr(u64)]
+#[repr(i64)]
 pub enum FuncType {
     Db = 14,
     Table = 15,
@@ -79,6 +76,6 @@ pub enum FuncType {
 
 impl ToJson for FuncType {
     fn to_json(&self) -> json::Json {
-        json::U64(*self as u64)
+        json::I64(*self as i64)
     }
 }
