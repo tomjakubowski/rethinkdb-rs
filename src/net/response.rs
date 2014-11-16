@@ -22,10 +22,12 @@ impl RawResponse {
 
         match values {
             (Some(t), Some(r)) => {
+                assert!(t <= ::std::u8::MAX as u64);
+                // FIXME: clone
                 Ok(RawResponse { res_type: t as u8, res: r.clone() })
             },
             _ => {
-                let msg = format!("JSON decoding error: {}", json);
+                let msg = format!("Couldn't unpack response: {}", json);
                 Err(ProtocolError(msg))
             }
         }
@@ -49,7 +51,7 @@ impl Response {
                 SUCCESS_ATOM => Ok(Response::new(ResponseAtom, raw.res)),
                 SUCCESS_SEQUENCE => Ok(Response::new(ResponseSequence, raw.res)),
                 SUCCESS_PARTIAL => Ok(Response::new(ResponsePartial, raw.res)),
-                n => Err(Error::new(n, raw.res))
+                n => Err(Error::from_code_res(n, raw.res))
             }
         })
     }
