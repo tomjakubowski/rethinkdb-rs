@@ -1,5 +1,6 @@
 use from_response::FromResponse;
 use net;
+use serialize::{Decodable, Decoder};
 use serialize::json::{mod, ToJson};
 
 use RdbResult;
@@ -13,23 +14,25 @@ pub trait Term {
     }
 }
 
-// Unfortunately, due to coherence rules we cannot do:
+/// A term which can be executed in RethinkDB as a query.
+/// The input type to this trait will become an output type once a Rust bug is fixed.
+pub trait Query<R: FromResponse>: ToJson + Term {
+    /* FIXME: restore this when associated types are less broken rust/#18048
+    /// A type which can be decoded from the successful response of executing this query.
+    type R: FromResponse;
+    */
+
+    fn run(self, conn: &mut net::Connection) -> RdbResult<R> {
+        net::run(conn, self.to_json()).and_then(FromResponse::from_response)
+    }
+}
+
+// Unfortunately, due to coherence rules we cannot do a single;
 // impl<T: Term> ToJson for T {
 //     fn to_json(&self) -> json::Json {
 //         ...
 //     }
 // }
-/// A term which can be executed in RethinkDB as a query.
-/// The input type to this trait will become an output type once a Rust bug is fixed.
-pub trait Query: ToJson + Term {
-    /// A type which can be decoded from the successful response of executing this query.
-    type R: FromResponse;
-
-    fn run(self, conn: &mut net::Connection) -> RdbResult< <Self as Query>::R> {
-        net::run(conn, self.to_json()).and_then(FromResponse::from_response)
-    }
-}
-
 macro_rules! to_json_impl {
     ($name:ident $term_ty:expr) => {
         impl ::serialize::json::ToJson for $name {
@@ -58,7 +61,7 @@ macro_rules! term {
             $($field: $ty),*
         }
 
-        impl ::query2::Term for $name {
+        impl ::query::Term for $name {
             fn args(&self) -> Vec<::serialize::json::Json> {
                 vec![$(self.$field.to_json()),*]
             }
@@ -66,24 +69,29 @@ macro_rules! term {
 
         to_json_impl! { $name $term_ty }
 
-        impl ::query2::Query for $name {
-            type R = $resp;
+        impl ::query::Query<$resp> for $name {
+            // type R = $resp;
         }
     };
+    // The extra $()* around the { $($field $ty) } is a hack to make that optional :(
+    // How about something like $(...)? ?
     (enum $name:ident -> $resp:ty {
-        $($variant:ident { $($field:ident: $ty:ty),* }),*
+        $( $variant:ident $({
+            $( $field:ident : $ty:ty ),+
+        })*),*
     } $term_ty:expr) => {
         #[deriving(Show)]
         pub enum $name {
-            $($variant { $($field: $ty),* }),*
+            $( $variant $({
+                $( $field: $ty ),+
+            })* ),*
         }
 
-        impl ::query2::Term for $name {
+        impl ::query::Term for $name {
             fn args(&self) -> Vec<::serialize::json::Json> {
                 match *self {
-                    $($variant { $(ref $field),* } => {
-                        vec![$($field.to_json()),*]
-                        // panic!()
+                    $($variant $({ $(ref $field),+ })* => {
+                        vec![$($($field.to_json()),+)*]
                     }),*
                 }
             }
@@ -91,8 +99,8 @@ macro_rules! term {
 
         to_json_impl! { $name $term_ty }
 
-        impl ::query2::Query for $name {
-            type R = $resp;
+        impl ::query::Query<$resp> for $name {
+            // type R = $resp;
         }
     }
 }
@@ -109,15 +117,15 @@ impl Db {
     }
 
     pub fn table_create(self, name: &str) -> TableCreate {
-        TableCreate { name: name.into_string(), db: self }
+        TableCreate2 { name: name.into_string(), db: self }
     }
 
     pub fn table_drop(self, name: &str) -> TableDrop {
-        TableDrop { name: name.into_string(), db: self }
+        TableDrop2 { name: name.into_string(), db: self }
     }
 
     pub fn table_list(self) -> TableList {
-        TableList { db: self }
+        TableList1 { db: self }
     }
 }
 
@@ -146,23 +154,36 @@ pub fn db_drop(name: &str) -> DbDrop {
 }
 
 term! {
-    TableCreate -> () {
-        db: Db,
-        name: String
+    enum TableCreate -> () {
+        TableCreate1 { name: String },
+        TableCreate2 { db: Db, name: String }
     } ty::TABLE_CREATE
 }
 
-term! {
-    TableDrop -> () {
-        db: Db,
-        name: String
-    } ty::TABLE_DROP
+pub fn table_create(name: &str) -> TableCreate {
+    TableCreate1 { name: name.into_string() }
 }
 
 term! {
-    TableList -> Vec<String> {
-        db: Db
+    enum TableDrop -> () {
+        TableDrop1 { name: String},
+        TableDrop2 { db: Db, name: String }
+    } ty::TABLE_DROP
+}
+
+pub fn table_drop(name: &str) -> TableDrop {
+    TableDrop1 { name: name.into_string() }
+}
+
+term! {
+    enum TableList -> Vec<String> {
+        TableList1 { db: Db },
+        TableList0
     } ty::TABLE_LIST
+}
+
+pub fn table_list() -> TableList {
+    TableList0
 }
 
 term! {
@@ -200,15 +221,14 @@ impl Table {
 }
 
 term! {
-    Get -> () {
+    Get -> json::Json {
         table: Table,
         key: String
     } ty::GET
 }
 
 term! {
-    // FIXME: should be a Writes structure
-    Insert -> () {
+    Insert -> Writes {
         table: Table,
         document: json::Json
     } ty::INSERT
@@ -234,6 +254,39 @@ term! {
     } ty::INDEX_LIST
 }
 
+// FIXME: this perhaps belongs somewhere else
+#[deriving(Show)]
+pub struct Writes {
+    pub deleted: uint,
+    pub errors: uint,
+    pub inserted: uint,
+    pub replaced: uint,
+    pub skipped: uint,
+    pub unchanged: uint,
+    pub generated_keys: Vec<String>
+}
+
+impl<D: Decoder<E>, E> Decodable<D, E> for Writes {
+    fn decode(d: &mut D) -> Result<Writes, E> {
+        d.read_struct("Writes", 7u, |d| {
+            Ok(Writes {
+                deleted: try!(d.read_struct_field("deleted", 0u, |d| Decodable::decode(d))),
+                errors: try!(d.read_struct_field("errors", 1u, |d| Decodable::decode(d))),
+                inserted: try!(d.read_struct_field("inserted", 2u, |d| Decodable::decode(d))),
+                replaced: try!(d.read_struct_field("replaced", 3u, |d| Decodable::decode(d))),
+                skipped: try!(d.read_struct_field("skipped", 4u, |d| Decodable::decode(d))),
+                unchanged: try!(d.read_struct_field("unchanged", 5u, |d| Decodable::decode(d))),
+                generated_keys: {
+                    match d.read_struct_field("generated_keys", 6u, |d| Decodable::decode(d)) {
+                        Ok(opt) => opt,
+                        Err(_) => Vec::new()
+                    }
+                }
+            })
+        })
+    }
+}
+
 mod ty {
     pub type TermType = i64;
 
@@ -255,7 +308,7 @@ mod ty {
 mod test {
     #[phase(plugin)] extern crate json_macros;
 
-    use query2 as r;
+    use query as r;
     use serialize::json::ToJson;
 
     #[test]

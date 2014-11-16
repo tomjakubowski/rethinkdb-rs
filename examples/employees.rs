@@ -1,9 +1,13 @@
+#![feature(if_let)]
+
 extern crate rethinkdb;
 extern crate serialize;
 
 use std::collections::TreeMap;
 use serialize::json;
 use serialize::json::ToJson;
+
+use rethinkdb::RdbResult;
 
 #[deriving(Decodable, Encodable, Show)]
 struct Employee {
@@ -33,13 +37,12 @@ impl ToJson for Employee {
     }
 }
 
-pub fn main() {
+fn it_stinks() -> RdbResult<()> {
     use rethinkdb::query as r;
+    use rethinkdb::Query;
 
     let mut conn = rethinkdb::connect("127.0.0.1", 28015).unwrap();
-    // Example usage... we can't actually create DBs yet, so in the
-    // end stick with "test" which should already exist.
-    conn.use_db("phillips_broadcasting");
+    // conn.use_db("phillips_broadcasting");
     conn.use_db("test");
 
     let jay = Employee::new("Jay Sherman");
@@ -47,21 +50,26 @@ pub fn main() {
     let duke = Employee::new("Duke Phillips");
     println!("Duke: {}", duke.to_json());
 
-    println!("create table {}", r::table_create("employees").run(&mut conn));
+    println!("create table {}", try!(r::table_create("employees").run(&mut conn)));
     println!("create index {}", r::table("employees").index_create("name").run(&mut conn));
 
-    let writes = r::table("employees").insert(jay.to_json()).run(&mut conn);
-    let writes = writes.unwrap();
+    let writes = try!(r::table("employees").insert(jay.to_json()).run(&mut conn));
     println!("insert document {}", writes);
 
-    let writes = r::table("employees").insert(duke.to_json()).run(&mut conn);
-    let writes = writes.unwrap();
+    let writes = try!(r::table("employees").insert(duke.to_json()).run(&mut conn));
     println!("insert document {}", writes);
 
-    let key: &str = writes.generated_keys[0].as_slice();
+    let key = writes.generated_keys[0].as_slice();
     println!("get document @ {} {}", key, r::table("employees").get(key).run(&mut conn));
     println!("list indexes {}", r::table("employees").index_list().run(&mut conn));
     println!("drop index {}", r::table("employees").index_drop("name").run(&mut conn));
     println!("list indexes {}", r::table("employees").index_list().run(&mut conn));
     println!("table drop {}", r::table_drop("employees").run(&mut conn));
+    Ok(())
+}
+
+pub fn main() {
+    if let Err(e) = it_stinks() {
+        println!("There was an error: {}", e);
+    }
 }

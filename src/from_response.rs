@@ -32,17 +32,6 @@ impl FromResponse for Vec<String> {
     }
 }
 
-impl FromResponse for query::Writes {
-    // vvvv this is all very very bad (FIXME)
-    fn from_response(res: Response) -> RdbResult<query::Writes> {
-        use serialize::Decodable;
-        let list = res.values.as_list().unwrap();
-        let mut decoder = json::Decoder::new(list[0].clone()); // FIXME
-        let insertion: query::Writes = Decodable::decode(&mut decoder).unwrap(); // FIXME
-        Ok(insertion)
-    }
-}
-
 impl FromResponse for Response {
     fn from_response(res: Response) -> RdbResult<Response> { Ok(res) }
 }
@@ -51,9 +40,14 @@ impl FromResponse for json::Json {
     fn from_response(res: Response) -> RdbResult<json::Json> { Ok(res.values) }
 }
 
-impl FromResponse for query::Document {
-    fn from_response(res: Response) -> RdbResult<query::Document> {
-        Ok(query::Document(res.values))
+impl FromResponse for query::Writes {
+    // vvvv this is all very very bad
+    fn from_response(res: Response) -> RdbResult<query::Writes> {
+        use serialize::Decodable;
+        let list = res.values.as_list().unwrap();
+        let mut decoder = json::Decoder::new(list[0].clone()); // FIXME
+        let insertion: query::Writes = Decodable::decode(&mut decoder).unwrap(); // FIXME
+        Ok(insertion)
     }
 }
 

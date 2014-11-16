@@ -1,6 +1,5 @@
 use errors::{ProtocolError, RdbResult};
 pub use self::response::{Response, ResponseKind, ResponseAtom, ResponseSequence};
-use term;
 
 use std::collections::TreeMap;
 
@@ -28,9 +27,11 @@ struct OptArgs {
 
 impl<'a> ToJson for &'a OptArgs {
     fn to_json(&self) -> json::Json {
+        use query as r;
+
         let mut d = TreeMap::new();
-        if self.db.is_some() {
-            d.insert("db".to_string(), (term::Db, (self.db.clone(),)).to_json());
+        if let Some(ref s) = self.db {
+            d.insert("db".to_string(), r::db(s.as_slice()).to_json());
         }
         json::Object(d)
     }
