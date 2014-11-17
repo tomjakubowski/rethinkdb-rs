@@ -1,9 +1,12 @@
-use from_response::FromResponse;
-use net;
 use serialize::{Decodable, Decoder};
 use serialize::json::{mod, ToJson};
 
+use from_response::FromResponse;
+use net;
 use RdbResult;
+
+pub use self::db::{Db, db, db_create, db_drop};
+pub use self::table::{Table, table, table_create, table_drop, table_list};
 
 pub trait Term {
     // FIXME: eventually use an associated constant for the TermType
@@ -37,6 +40,7 @@ macro_rules! to_json_impl {
     ($name:ident $term_ty:expr) => {
         impl ::serialize::json::ToJson for $name {
             fn to_json(&self) -> ::serialize::json::Json {
+                use query::Term;
                 match self.opt_args() {
                     Some(opt_args) => {
                         ($term_ty, self.args(), opt_args).to_json()
@@ -63,6 +67,7 @@ macro_rules! term {
 
         impl ::query::Term for $name {
             fn args(&self) -> Vec<::serialize::json::Json> {
+                use serialize::json::ToJson;
                 vec![$(self.$field.to_json()),*]
             }
         }
@@ -89,6 +94,7 @@ macro_rules! term {
 
         impl ::query::Term for $name {
             fn args(&self) -> Vec<::serialize::json::Json> {
+                use serialize::json::ToJson;
                 match *self {
                     $($variant $({ $(ref $field),+ })* => {
                         vec![$($($field.to_json()),+)*]
@@ -103,155 +109,6 @@ macro_rules! term {
             // type R = $resp;
         }
     }
-}
-
-term! {
-    Db -> () {
-        name: String
-    } ty::DB
-}
-
-impl Db {
-    pub fn table(self, name: &str) -> Table {
-        Table2 { db: self, name: name.into_string() }
-    }
-
-    pub fn table_create(self, name: &str) -> TableCreate {
-        TableCreate2 { name: name.into_string(), db: self }
-    }
-
-    pub fn table_drop(self, name: &str) -> TableDrop {
-        TableDrop2 { name: name.into_string(), db: self }
-    }
-
-    pub fn table_list(self) -> TableList {
-        TableList1 { db: self }
-    }
-}
-
-pub fn db(name: &str) -> Db {
-    Db { name: name.into_string() }
-}
-
-term! {
-    DbCreate -> () {
-        name: String
-    } ty::DB_CREATE
-}
-
-pub fn db_create(name: &str) -> DbCreate {
-    DbCreate { name: name.into_string() }
-}
-
-term! {
-    DbDrop -> () {
-        name: String
-    } ty::DB_DROP
-}
-
-pub fn db_drop(name: &str) -> DbDrop {
-    DbDrop { name: name.into_string() }
-}
-
-term! {
-    enum TableCreate -> () {
-        TableCreate1 { name: String },
-        TableCreate2 { db: Db, name: String }
-    } ty::TABLE_CREATE
-}
-
-pub fn table_create(name: &str) -> TableCreate {
-    TableCreate1 { name: name.into_string() }
-}
-
-term! {
-    enum TableDrop -> () {
-        TableDrop1 { name: String},
-        TableDrop2 { db: Db, name: String }
-    } ty::TABLE_DROP
-}
-
-pub fn table_drop(name: &str) -> TableDrop {
-    TableDrop1 { name: name.into_string() }
-}
-
-term! {
-    enum TableList -> Vec<String> {
-        TableList1 { db: Db },
-        TableList0
-    } ty::TABLE_LIST
-}
-
-pub fn table_list() -> TableList {
-    TableList0
-}
-
-term! {
-    // FIXME: should return an iterator over the documents of the table
-    enum Table -> () {
-        Table1 { name: String },
-        Table2 { db: Db, name: String }
-    } ty::TABLE
-}
-
-pub fn table(name: &str) -> Table {
-    Table1 { name: name.into_string() }
-}
-
-impl Table {
-    pub fn get(self, key: &str) -> Get {
-        Get { table: self, key: key.into_string() }
-    }
-
-    pub fn insert(self, document: json::Json) -> Insert {
-        Insert { table: self, document: document }
-    }
-
-    pub fn index_create(self, name: &str) -> IndexCreate {
-        IndexCreate { table: self, name: name.into_string() }
-    }
-
-    pub fn index_drop(self, name: &str) -> IndexDrop {
-        IndexDrop { table: self, name: name.into_string() }
-    }
-
-    pub fn index_list(self) -> IndexList {
-        IndexList { table: self }
-    }
-}
-
-term! {
-    Get -> json::Json {
-        table: Table,
-        key: String
-    } ty::GET
-}
-
-term! {
-    Insert -> Writes {
-        table: Table,
-        document: json::Json
-    } ty::INSERT
-}
-
-term! {
-    IndexCreate -> () {
-        table: Table,
-        name: String
-    } ty::INDEX_CREATE
-}
-
-term! {
-    IndexDrop -> () {
-        table: Table,
-        name: String
-    } ty::INDEX_DROP
-}
-
-term! {
-    IndexList -> Vec<String> {
-        table: Table
-    } ty::INDEX_LIST
 }
 
 // FIXME: this perhaps belongs somewhere else
@@ -287,22 +144,9 @@ impl<D: Decoder<E>, E> Decodable<D, E> for Writes {
     }
 }
 
-mod ty {
-    pub type TermType = i64;
-
-    pub const DB: TermType = 14;
-    pub const TABLE: TermType = 15;
-    pub const GET: TermType = 16;
-    pub const INSERT: TermType = 56;
-    pub const DB_CREATE: TermType = 57;
-    pub const DB_DROP: TermType = 58;
-    pub const TABLE_CREATE: TermType = 60;
-    pub const TABLE_DROP: TermType = 61;
-    pub const TABLE_LIST: TermType = 62;
-    pub const INDEX_CREATE: TermType = 75;
-    pub const INDEX_DROP: TermType = 76;
-    pub const INDEX_LIST: TermType = 77;
-}
+mod db;
+mod table;
+mod term_type;
 
 #[cfg(test)]
 mod test {
