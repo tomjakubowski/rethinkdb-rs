@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import rethinkdb as r
 import json
 import sys
