@@ -1,75 +1,131 @@
-#![feature(if_let)]
+#![feature(if_let, phase)]
 
+#[phase(plugin)] extern crate json_macros;
 extern crate rethinkdb;
 extern crate serialize;
 
-use std::collections::TreeMap;
-use serialize::json;
-use serialize::json::ToJson;
+use serialize::json::{mod, ToJson};
 
-use rethinkdb::RdbResult;
+use rethinkdb::{Connection, RdbResult};
+use rethinkdb::query as r;
+use rethinkdb::Query;
 
 #[deriving(Decodable, Encodable, Show)]
 struct Employee {
     id: Option<String>,
-    name: String
+    name: String,
+    catchphrase: String
 }
 
 impl Employee {
-    pub fn new(name: &str) -> Employee {
-        Employee { id: None, name: name.to_string() }
+    fn new(name: &str, catchphrase: &str) -> Employee {
+        Employee {
+            id: None,
+            name: name.into_string(),
+            catchphrase: catchphrase.into_string()
+        }
+    }
+
+    fn find_by_id(id: &str, conn: &mut Connection) -> RdbResult<Employee> {
+        use serialize::Decodable;
+
+        let table = r::table("employees");
+        // see the FIXME on Get
+        let docs = try!(table.get(id).run(conn));
+        let mut decoder = json::Decoder::new(docs);
+
+        let mut employees: Vec<Employee> = Decodable::decode(&mut decoder).unwrap();
+        Ok(employees.remove(0).unwrap())
+    }
+
+    fn is_new(&self) -> bool {
+        self.id.is_none()
+    }
+
+    fn delete(self, conn: &mut Connection) -> RdbResult<()> {
+        let table = r::table("employees");
+        let id = self.id.expect("Employee record has None id");
+        table.get(id.as_slice()).delete().run(conn).and_then(|_| Ok(()))
+    }
+
+    fn save(&mut self, conn: &mut Connection) -> RdbResult<()> {
+        let table = r::table("employees");
+        if self.is_new() {
+            let writes = try!(table.insert(self.to_json()).run(conn));
+            self.id = writes.generated_keys.and_then(|mut x| x.remove(0));
+        } else {
+            // FIXME: update
+        }
+        Ok(())
     }
 }
 
 impl ToJson for Employee {
     fn to_json(&self) -> json::Json {
-        let mut e = TreeMap::new();
-        match self.id {
-            Some(ref id) => {
-                e.insert("id".to_string(), id.to_json());
-            },
-            _ => {
-            }
-        };
-
-        e.insert("name".to_string(), self.name.to_json());
-        json::Object(e)
+        if let Some(ref id) = self.id {
+            json!({
+                "id": (id),
+                "name": (self.name),
+                "catchphrase": (self.catchphrase)
+            })
+        } else {
+            json!({
+                "name": (self.name),
+                "catchphrase": (self.catchphrase)
+            })
+        }
     }
 }
 
-fn it_stinks() -> RdbResult<()> {
-    use rethinkdb::query as r;
-    use rethinkdb::Query;
+fn it_stinks(conn: &mut Connection) -> RdbResult<()> {
+    // NOTE: This is cheating. Once we can pick the key for get() calls, then we can
+    // find_by_name "Jay Sherman".
+    let jay_id = {
+        let mut jay: Employee = Employee::new("Jay Sherman", "It stinks!");
+        println!("Saving Jay Sherman...");
+        try!(jay.save(conn));
+        println!("Jay Sherman: {}", jay);
+        jay.id
+    }.expect("jay.id is None after save");
 
-    let mut conn = rethinkdb::connect("127.0.0.1", 28015).unwrap();
-    // conn.use_db("phillips_broadcasting");
-    conn.use_db("test");
+    println!("Loading fresh Jay Sherman from db...");
+    let jay = try!(Employee::find_by_id(jay_id.as_slice(), conn));
+    println!("Jay Sherman: {}", jay);
 
-    let jay = Employee::new("Jay Sherman");
-    println!("Jay: {}", jay.to_json());
-    let duke = Employee::new("Duke Phillips");
-    println!("Duke: {}", duke.to_json());
+    // FIXME: update catchphrase to "Buy my book" + reload
 
-    println!("create table {}", try!(r::table_create("employees").run(&mut conn)));
-    println!("create index {}", r::table("employees").index_create("name").run(&mut conn));
+    println!("Deleting Jay Sherman...");
+    try!(jay.delete(conn));
 
-    let writes = try!(r::table("employees").insert(jay.to_json()).run(&mut conn));
-    println!("insert document {}", writes);
-
-    let writes = try!(r::table("employees").insert(duke.to_json()).run(&mut conn));
-    println!("insert document {}", writes);
-
-    let key = writes.generated_keys[0].as_slice();
-    println!("get document @ {} {}", key, r::table("employees").get(key).run(&mut conn));
-    println!("list indexes {}", r::table("employees").index_list().run(&mut conn));
-    println!("drop index {}", r::table("employees").index_drop("name").run(&mut conn));
-    println!("list indexes {}", r::table("employees").index_list().run(&mut conn));
-    println!("table drop {}", r::table_drop("employees").run(&mut conn));
     Ok(())
 }
 
+fn setup() -> RdbResult<Connection> {
+    let mut conn = try!(rethinkdb::connect("127.0.0.1", 28015));
+    conn.use_db("test");
+    let tables = try!(r::table_list().run(&mut conn));
+
+    if let None = tables.iter().find(|x| x.as_slice() == "employees") {
+        println!("Creating employees table...");
+        try!(r::table_create("employees").run(&mut conn));
+        try!(r::table("employees").index_create("name").run(&mut conn));
+
+        let indexes = r::table("employees").index_list().run(&mut conn);
+        println!("Created table and indexes: {}", indexes);
+    }
+
+    Ok(conn)
+}
+
 pub fn main() {
-    if let Err(e) = it_stinks() {
+    let conn = setup();
+    if let Err(e) = conn {
+        println!("Setup error: {}", e);
+        return;
+    };
+    let mut conn = conn.unwrap();
+
+    if let Err(e) = it_stinks(&mut conn) {
         println!("There was an error: {}", e);
     }
 }
