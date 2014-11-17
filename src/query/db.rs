@@ -13,6 +13,10 @@ pub fn db_drop(name: &str) -> DbDrop {
     DbDrop { name: name.into_string() }
 }
 
+pub fn db_list() -> DbList {
+    DbList
+}
+
 term! {
     Db -> () {
         name: String
@@ -49,3 +53,6 @@ term! {
     } ty::DB_DROP
 }
 
+term! {
+    DbList -> Vec<String> ; ty::DB_LIST
+}

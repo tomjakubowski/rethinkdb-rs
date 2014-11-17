@@ -71,10 +71,18 @@ impl Table {
 }
 
 term! {
+    // FIXME: Get should really be generic in its reql return type to support decoding
+    // responses directly into structs
     Get -> json::Json {
         table: Table,
         key: String
     } ty::GET
+}
+
+impl Get {
+    pub fn delete(self) -> Delete {
+        Delete::DeleteGet { get: self }
+    }
 }
 
 term! {
@@ -82,6 +90,15 @@ term! {
         table: Table,
         document: json::Json
     } ty::INSERT
+}
+
+term! {
+    // FIXME: this could also be generic over a type bounded by some trait
+    // SingleSelection, on which the delete() method would be defined. But this means
+    // users need to import that trait. Come back to this.
+    enum Delete -> Writes {
+        DeleteGet { get: Get }
+    } ty::DELETE
 }
 
 term! {

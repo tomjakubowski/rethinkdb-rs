@@ -1,5 +1,6 @@
 #![feature(associated_types, if_let, macro_rules, phase, struct_variant)]
 
+#[phase(plugin, link)] extern crate log;
 extern crate serialize;
 
 pub use errors::{Error, RdbResult};

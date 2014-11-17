@@ -14,7 +14,7 @@ impl FromResponse for Vec<String> {
 
         match res.kind {
             ResponseAtom => {
-                // vvv bad (FIXME)
+                // vvv FIXME bad unwraps
                 let list = res.values.as_list().unwrap();
                 let list = list[0].as_list().unwrap();
 

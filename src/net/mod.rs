@@ -67,7 +67,9 @@ impl Connection {
             json::from_reader(&mut reader).unwrap()
         };
 
-        Response::from_json(response_json)
+        let res = Response::from_json(response_json);
+        debug!("Response: {}", res);
+        res
     }
 
     fn execute_json(&mut self, json: Json) -> IoResult<Vec<u8>> {

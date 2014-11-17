@@ -1,12 +1,11 @@
-use serialize::{Decodable, Decoder};
 use serialize::json::{mod, ToJson};
 
 use from_response::FromResponse;
 use net;
 use RdbResult;
 
-pub use self::db::{Db, db, db_create, db_drop};
-pub use self::table::{Table, table, table_create, table_drop, table_list};
+pub use self::db::{Db, db, db_create, db_drop, db_list};
+pub use self::table::{Get, Table, table, table_create, table_drop, table_list};
 
 pub trait Term {
     // FIXME: eventually use an associated constant for the TermType
@@ -57,6 +56,22 @@ macro_rules! to_json_impl {
 macro_rules! term {
     // FIXME: a Term need not be a Query (this could be signaled by leaving off
     // the resp)
+    ($name:ident -> $resp:ty ; $term_ty:expr) => {
+        #[deriving(Show)]
+        pub struct $name;
+
+        impl ::query::Term for $name {
+            fn args(&self) -> Vec<::serialize::json::Json> {
+                vec![]
+            }
+        }
+
+        to_json_impl! { $name $term_ty }
+
+        impl ::query::Query<$resp> for $name {
+            // type R = $resp;
+        }
+    };
     ($name:ident -> $resp:ty {
         $($field:ident: $ty:ty),*
     } $term_ty:expr) => {
@@ -112,36 +127,18 @@ macro_rules! term {
 }
 
 // FIXME: this perhaps belongs somewhere else
-#[deriving(Show)]
+// FIXME: having Option<> on everything is really annoying. Can we make RDB
+// always return all fields (at least the ones which are counts)?
+#[deriving(Decodable, Show)]
 pub struct Writes {
-    pub deleted: uint,
-    pub errors: uint,
-    pub inserted: uint,
-    pub replaced: uint,
-    pub skipped: uint,
-    pub unchanged: uint,
-    pub generated_keys: Vec<String>
-}
-
-impl<D: Decoder<E>, E> Decodable<D, E> for Writes {
-    fn decode(d: &mut D) -> Result<Writes, E> {
-        d.read_struct("Writes", 7u, |d| {
-            Ok(Writes {
-                deleted: try!(d.read_struct_field("deleted", 0u, |d| Decodable::decode(d))),
-                errors: try!(d.read_struct_field("errors", 1u, |d| Decodable::decode(d))),
-                inserted: try!(d.read_struct_field("inserted", 2u, |d| Decodable::decode(d))),
-                replaced: try!(d.read_struct_field("replaced", 3u, |d| Decodable::decode(d))),
-                skipped: try!(d.read_struct_field("skipped", 4u, |d| Decodable::decode(d))),
-                unchanged: try!(d.read_struct_field("unchanged", 5u, |d| Decodable::decode(d))),
-                generated_keys: {
-                    match d.read_struct_field("generated_keys", 6u, |d| Decodable::decode(d)) {
-                        Ok(opt) => opt,
-                        Err(_) => Vec::new()
-                    }
-                }
-            })
-        })
-    }
+    pub deleted: Option<u64>,
+    pub errors: Option<u64>,
+    pub inserted: Option<u64>,
+    pub replaced: Option<u64>,
+    pub skipped: Option<u64>,
+    pub unchanged: Option<u64>,
+    pub generated_keys: Option<Vec<String>>,
+    pub first_error: Option<String>
 }
 
 mod db;
@@ -174,6 +171,7 @@ mod test {
         assert_eq!(r::table("test").index_create("bar").to_json(), json!([75, [[15, ["test"]], "bar"]]));
         assert_eq!(r::table("test").index_drop("bar").to_json(), json!([76, [[15, ["test"]], "bar"]]));
         assert_eq!(r::table("test").index_list().to_json(), json!([77, [[15, ["test"]]]]));
+        assert_eq!(r::table("foo").get("bar").delete().to_json(), json!([54, [[16, [[15, ["foo"]], "bar"]]]]));
     }
 }
 
