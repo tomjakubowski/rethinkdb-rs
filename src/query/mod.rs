@@ -111,7 +111,7 @@ macro_rules! term {
             fn args(&self) -> Vec<::serialize::json::Json> {
                 use serialize::json::ToJson;
                 match *self {
-                    $($variant $({ $(ref $field),+ })* => {
+                    $($name::$variant $({ $(ref $field),+ })* => {
                         vec![$($($field.to_json()),+)*]
                     }),*
                 }

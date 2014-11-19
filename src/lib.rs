@@ -1,4 +1,4 @@
-#![feature(associated_types, if_let, macro_rules, phase, struct_variant)]
+#![feature(associated_types, if_let, macro_rules, phase)]
 
 #[phase(plugin, link)] extern crate log;
 extern crate serialize;

@@ -24,12 +24,11 @@ pub enum Error {
 
 impl Error {
     pub fn from_code_res(code: u8, res: Json) -> Error {
+        use Error::{ClientError, CompileError, RuntimeError, ProtocolError};
         let msgs = res.as_list();
         let msg = match msgs.map(|x| x.as_slice()) {
             Some([json::String(ref x)]) => x.to_string(),
-            _ => {
-                return ProtocolError(format!("couldn't find error message in {}", res));
-            }
+            _ => return ProtocolError(format!("couldn't find error message in {}", res))
         };
 
         match code {
@@ -42,9 +41,9 @@ impl Error {
 }
 
 impl FromError<io::IoError> for Error {
-    fn from_error(e: io::IoError) -> Error { IoError(e) }
+    fn from_error(e: io::IoError) -> Error { Error::IoError(e) }
 }
 
 impl FromError<json::ParserError> for Error {
-    fn from_error(e: json::ParserError) -> Error { JsonParseError(e) }
+    fn from_error(e: json::ParserError) -> Error { Error::JsonParseError(e) }
 }

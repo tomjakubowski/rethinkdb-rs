@@ -1,5 +1,5 @@
 use errors::RdbResult;
-use net::Response;
+use net::{Response, ResponseKind};
 use query;
 use serialize::json;
 
@@ -9,11 +9,10 @@ pub trait FromResponse {
 
 impl FromResponse for Vec<String> {
     fn from_response(res: Response) -> RdbResult<Vec<String>> {
-        use errors::DriverError;
-        use net::{ResponseAtom, ResponseSequence};
+        use errors::Error::DriverError;
 
         match res.kind {
-            ResponseAtom => {
+            ResponseKind::Atom => {
                 // vvv FIXME bad unwraps
                 let list = res.values.as_list().unwrap();
                 let list = list[0].as_list().unwrap();
@@ -22,7 +21,7 @@ impl FromResponse for Vec<String> {
                     s.as_string().unwrap().to_string()
                 }).collect())
             },
-            ResponseSequence => {
+            ResponseKind::Sequence => {
                 Err(DriverError(format!("FIXME ResponseSequence {}", res)))
             },
             _ => {

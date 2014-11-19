@@ -1,12 +1,13 @@
 use serialize::json::Json;
 
-use errors::{Error, ProtocolError, RdbResult};
+use errors::RdbResult;
+use errors::Error::{mod, ProtocolError};
 
 #[deriving(Show, PartialEq, Eq)]
 pub enum ResponseKind {
-    ResponseAtom,
-    ResponseSequence,
-    ResponsePartial
+    Atom,
+    Sequence,
+    Partial
 }
 
 #[deriving(Show)]
@@ -48,9 +49,9 @@ impl Response {
     pub fn from_json(json: Json) -> RdbResult<Response> {
         RawResponse::from_json(json).and_then(|raw: RawResponse| {
             match raw.res_type {
-                SUCCESS_ATOM => Ok(Response::new(ResponseAtom, raw.res)),
-                SUCCESS_SEQUENCE => Ok(Response::new(ResponseSequence, raw.res)),
-                SUCCESS_PARTIAL => Ok(Response::new(ResponsePartial, raw.res)),
+                SUCCESS_ATOM => Ok(Response::new(ResponseKind::Atom, raw.res)),
+                SUCCESS_SEQUENCE => Ok(Response::new(ResponseKind::Sequence, raw.res)),
+                SUCCESS_PARTIAL => Ok(Response::new(ResponseKind::Partial, raw.res)),
                 n => Err(Error::from_code_res(n, raw.res))
             }
         })
@@ -68,7 +69,7 @@ impl Response {
 mod test {
     use serialize::json;
 
-    use super::{RawResponse, Response, ResponseAtom};
+    use super::{RawResponse, Response, ResponseKind};
 
     #[test]
     fn test_raw_response_from_json() {
@@ -90,7 +91,7 @@ mod test {
 
         let Response { kind, values } = res;
 
-        assert_eq!(kind, ResponseAtom);
+        assert_eq!(kind, ResponseKind::Atom);
         assert_eq!(values, json::List(vec![tables]));
     }
 

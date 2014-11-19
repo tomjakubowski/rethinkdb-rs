@@ -11,7 +11,7 @@ term! {
 }
 
 pub fn table_create(name: &str) -> TableCreate {
-    TableCreate1 { name: name.into_string() }
+    TableCreate::TableCreate1 { name: name.into_string() }
 }
 
 term! {
@@ -22,7 +22,7 @@ term! {
 }
 
 pub fn table_drop(name: &str) -> TableDrop {
-    TableDrop1 { name: name.into_string() }
+    TableDrop::TableDrop1 { name: name.into_string() }
 }
 
 term! {
@@ -33,7 +33,7 @@ term! {
 }
 
 pub fn table_list() -> TableList {
-    TableList0
+    TableList::TableList0
 }
 
 term! {
@@ -45,7 +45,7 @@ term! {
 }
 
 pub fn table(name: &str) -> Table {
-    Table1 { name: name.into_string() }
+    Table::Table1 { name: name.into_string() }
 }
 
 impl Table {

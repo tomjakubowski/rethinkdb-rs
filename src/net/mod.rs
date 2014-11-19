@@ -1,5 +1,6 @@
-use errors::{ProtocolError, RdbResult};
-pub use self::response::{Response, ResponseKind, ResponseAtom, ResponseSequence};
+use errors::RdbResult;
+use errors::Error::ProtocolError;
+pub use self::response::{Response, ResponseKind};
 
 use std::collections::TreeMap;
 
