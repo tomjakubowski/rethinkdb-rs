@@ -15,5 +15,5 @@ doctest = false # FIXME
 name = "employees"
 path = "examples/employees.rs"
 
-[dev-dependencies.json_macros]
-git = "https://github.com/tomjakubowski/json_macros"
+[dev-dependencies]
+json_macros = "0.0.1"
