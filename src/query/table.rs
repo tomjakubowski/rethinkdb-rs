@@ -3,7 +3,7 @@ use serialize::json;
 use super::{Db, Writes};
 use super::term_type as ty;
 
-term! {
+query! {
     enum TableCreate -> () {
         TableCreate1 { name: String },
         TableCreate2 { db: Db, name: String }
@@ -14,7 +14,7 @@ pub fn table_create(name: &str) -> TableCreate {
     TableCreate::TableCreate1 { name: name.into_string() }
 }
 
-term! {
+query! {
     enum TableDrop -> () {
         TableDrop1 { name: String},
         TableDrop2 { db: Db, name: String }
@@ -25,7 +25,7 @@ pub fn table_drop(name: &str) -> TableDrop {
     TableDrop::TableDrop1 { name: name.into_string() }
 }
 
-term! {
+query! {
     enum TableList -> Vec<String> {
         TableList1 { db: Db },
         TableList0
@@ -36,7 +36,7 @@ pub fn table_list() -> TableList {
     TableList::TableList0
 }
 
-term! {
+query! {
     // FIXME: should return an iterator over the documents of the table
     enum Table -> () {
         Table1 { name: String },
@@ -70,7 +70,7 @@ impl Table {
     }
 }
 
-term! {
+query! {
     // FIXME: Get should really be generic in its reql return type to support decoding
     // responses directly into structs
     Get -> json::Json {
@@ -85,14 +85,14 @@ impl Get {
     }
 }
 
-term! {
+query! {
     Insert -> Writes {
         table: Table,
         document: json::Json
     } ty::INSERT
 }
 
-term! {
+query! {
     // FIXME: this could also be generic over a type bounded by some trait
     // SingleSelection, on which the delete() method would be defined. But this means
     // users need to import that trait. Come back to this.
@@ -101,21 +101,21 @@ term! {
     } ty::DELETE
 }
 
-term! {
+query! {
     IndexCreate -> () {
         table: Table,
         name: String
     } ty::INDEX_CREATE
 }
 
-term! {
+query! {
     IndexDrop -> () {
         table: Table,
         name: String
     } ty::INDEX_DROP
 }
 
-term! {
+query! {
     IndexList -> Vec<String> {
         table: Table
     } ty::INDEX_LIST

@@ -18,7 +18,7 @@ pub fn db_list() -> DbList {
 }
 
 term! {
-    Db -> () {
+    Db {
         name: String
     } ty::DB
 }
@@ -41,18 +41,18 @@ impl Db {
     }
 }
 
-term! {
+query! {
     DbCreate -> () {
         name: String
     } ty::DB_CREATE
 }
 
-term! {
+query! {
     DbDrop -> () {
         name: String
     } ty::DB_DROP
 }
 
-term! {
+query! {
     DbList -> Vec<String> ; ty::DB_LIST
 }

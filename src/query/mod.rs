@@ -54,9 +54,7 @@ macro_rules! to_json_impl {
 }
 
 macro_rules! term {
-    // FIXME: a Term need not be a Query (this could be signaled by leaving off
-    // the resp)
-    ($name:ident -> $resp:ty ; $term_ty:expr) => {
+    ($name:ident ; $term_ty:expr) => {
         #[deriving(Show)]
         pub struct $name;
 
@@ -67,17 +65,13 @@ macro_rules! term {
         }
 
         to_json_impl! { $name $term_ty }
-
-        impl ::query::Query<$resp> for $name {
-            // type R = $resp;
-        }
     };
-    ($name:ident -> $resp:ty {
+    ($name:ident {
         $($field:ident: $ty:ty),*
     } $term_ty:expr) => {
         #[deriving(Show)]
         pub struct $name {
-            $($field: $ty),*
+            $($field: $ty),+
         }
 
         impl ::query::Term for $name {
@@ -88,11 +82,28 @@ macro_rules! term {
         }
 
         to_json_impl! { $name $term_ty }
+    };
+}
+
+macro_rules! query {
+    // FIXME: can repeating matchers here + in term! be avoided?
+    ($name:ident -> $resp:ty ; $term_ty:expr) => {
+        term! { $name ; $term_ty }
 
         impl ::query::Query<$resp> for $name {
             // type R = $resp;
         }
     };
+    ($name:ident -> $resp:ty {
+        $($field:ident: $ty:ty),+
+    } $term_ty:expr) => {
+        term! { $name { $($field: $ty),* } $term_ty }
+
+        impl ::query::Query<$resp> for $name {
+            // type R = $resp;
+        }
+    };
+    // FIXME: term! for enums
     // The extra $()* around the { $($field $ty) } is a hack to make that optional :(
     // How about something like $(...)? ?
     (enum $name:ident -> $resp:ty {
