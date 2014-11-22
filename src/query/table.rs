@@ -2,6 +2,7 @@ use serialize::json;
 
 use super::{Db, Writes};
 use super::term_type as ty;
+use super::cursor::Cursor;
 
 query! {
     enum TableCreate -> () {
@@ -37,8 +38,7 @@ pub fn table_list() -> TableList {
 }
 
 query! {
-    // FIXME: should return an iterator over the documents of the table
-    enum Table -> () {
+    enum Table -> Cursor {
         Table1 { name: String },
         Table2 { db: Db, name: String }
     } ty::TABLE

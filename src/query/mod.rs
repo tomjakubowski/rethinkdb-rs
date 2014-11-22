@@ -4,6 +4,7 @@ use from_response::FromResponse;
 use net;
 use RdbResult;
 
+pub use self::cursor::{Cursor, Items};
 pub use self::db::{Db, db, db_create, db_drop, db_list};
 pub use self::table::{Get, Table, table, table_create, table_drop, table_list};
 
@@ -152,6 +153,7 @@ pub struct Writes {
     pub first_error: Option<String>
 }
 
+mod cursor;
 mod db;
 mod table;
 mod term_type;
