@@ -105,7 +105,7 @@ fn setup() -> RdbResult<Connection> {
     conn.use_db("test");
     let tables = try!(r::table_list().run(&mut conn));
 
-    if let None = tables.iter().find(|x| x.as_slice() == "employees") {
+    if let None = tables.into_iter().find(|x| &**x == "employees") {
         println!("Creating employees table...");
         try!(r::table_create("employees").run(&mut conn));
         try!(r::table("employees").index_create("name").run(&mut conn));
