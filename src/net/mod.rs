@@ -1,5 +1,5 @@
 use errors::RdbResult;
-use errors::Error::ProtocolError;
+use errors::Error::DriverError;
 pub use self::response::{Response, ResponseKind};
 
 use std::collections::TreeMap;
@@ -138,7 +138,7 @@ pub fn connect(host: &str, port: u16) -> RdbResult<Connection> {
     match response.as_slice() {
         b"SUCCESS" => { },
         _ => {
-            return Err(ProtocolError("handshake error".to_string()));
+            return Err(DriverError("handshake error".to_string()));
         }
     };
     Ok(conn)

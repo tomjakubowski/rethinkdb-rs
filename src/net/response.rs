@@ -1,7 +1,7 @@
 use serialize::json::Json;
 
 use errors::RdbResult;
-use errors::Error::{mod, ProtocolError};
+use errors::Error::{mod, DriverError};
 
 #[deriving(Show, PartialEq, Eq)]
 pub enum ResponseKind {
@@ -29,7 +29,7 @@ impl RawResponse {
             },
             _ => {
                 let msg = format!("Couldn't unpack response: {}", json);
-                Err(ProtocolError(msg))
+                Err(DriverError(msg))
             }
         }
     }
