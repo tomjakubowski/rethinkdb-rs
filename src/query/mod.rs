@@ -4,10 +4,11 @@ use from_response::FromResponse;
 use net;
 use RdbResult;
 
-pub use self::cursor::{Cursor, Items};
-pub use self::db::{Db, db, db_create, db_drop, db_list};
-pub use self::table::{Get, Table, table, table_create, table_drop, table_list};
+pub use self::db::{Db, DbCreate, DbDrop, DbList, db, db_create, db_drop, db_list};
+pub use self::table::{Table, TableCreate, TableDrop, TableList, Get};
+pub use self::table::{table, table_create, table_drop, table_list};
 
+#[doc(hidden)]
 pub trait Term {
     // FIXME: eventually use an associated constant for the TermType
     fn args(&self) -> Vec<json::Json>; // FIXME: Args input type? rust/#17388 is problem
@@ -38,6 +39,7 @@ pub trait Query<R: FromResponse>: ToJson + Term {
 // }
 macro_rules! to_json_impl {
     ($name:ident $term_ty:expr) => {
+        #[doc(hidden)]
         impl ::serialize::json::ToJson for $name {
             fn to_json(&self) -> ::serialize::json::Json {
                 use query::Term;
@@ -56,7 +58,6 @@ macro_rules! to_json_impl {
 
 macro_rules! term {
     ($name:ident ; $term_ty:expr) => {
-        #[deriving(Show)]
         pub struct $name;
 
         impl ::query::Term for $name {
@@ -70,7 +71,6 @@ macro_rules! term {
     ($name:ident {
         $($field:ident: $ty:ty),*
     } $term_ty:expr) => {
-        #[deriving(Show)]
         pub struct $name {
             $($field: $ty),+
         }
@@ -112,7 +112,6 @@ macro_rules! query {
             $( $field:ident : $ty:ty ),+
         })*),*
     } $term_ty:expr) => {
-        #[deriving(Show)]
         pub enum $name {
             $( $variant $({
                 $( $field: $ty ),+
@@ -138,6 +137,11 @@ macro_rules! query {
     }
 }
 
+pub mod cursor;
+mod db;
+mod table;
+mod term_type;
+
 // FIXME: this perhaps belongs somewhere else
 // FIXME: having Option<> on everything is really annoying. Can we make RDB
 // always return all fields (at least the ones which are counts)?
@@ -152,11 +156,6 @@ pub struct Writes {
     pub generated_keys: Option<Vec<String>>,
     pub first_error: Option<String>
 }
-
-mod cursor;
-mod db;
-mod table;
-mod term_type;
 
 #[cfg(test)]
 mod test {

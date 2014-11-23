@@ -1,6 +1,7 @@
 use serialize::json;
 
-use super::{Db, Writes};
+use super::Writes;
+use super::db::Db;
 use super::term_type as ty;
 use super::cursor::Cursor;
 
