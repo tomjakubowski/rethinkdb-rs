@@ -21,7 +21,7 @@ pub enum Error {
 impl Error {
     pub fn from_code_res(code: u8, res: Json) -> Error {
         use Error::{ClientError, CompileError, RuntimeError, DriverError};
-        let msgs = res.as_list();
+        let msgs = res.as_array();
         let msg = match msgs.map(|x| x.as_slice()) {
             Some([json::String(ref x)]) => x.to_string(),
             _ => return DriverError(format!("couldn't find error message in {}", res))

@@ -13,9 +13,9 @@ impl<'a> FromResponse<'a> for Vec<String> {
 
         match res.kind {
             ResponseKind::Atom => {
-                // vvv FIXME bad unwraps
-                let list = res.values.as_list().unwrap();
-                let list = list[0].as_list().unwrap();
+                // vvv FIXME bad unwraps?
+                let list = res.values.as_array().unwrap();
+                let list = list[0].as_array().unwrap();
 
                 Ok(list.iter().map(|s| {
                     s.as_string().unwrap().to_string()
@@ -41,7 +41,7 @@ impl<'a> FromResponse<'a> for query::Writes {
     // vvvv this is all very very bad
     fn from_response(res: Response, _: &mut Connection) -> RdbResult<query::Writes> {
         use serialize::Decodable;
-        let list = res.values.as_list().unwrap();
+        let list = res.values.as_array().unwrap();
         let mut decoder = json::Decoder::new(list[0].clone()); // FIXME
         let insertion: query::Writes = Decodable::decode(&mut decoder).unwrap(); // FIXME
         Ok(insertion)

@@ -30,7 +30,7 @@ impl<'a> FromResponse<'a> for Cursor<'a> {
         use net::ResponseKind;
 
         debug!("Response: {}", res);
-        let chunk = match res.values.as_list() {
+        let chunk = match res.values.as_array() {
             Some(chunk) => chunk.clone(),
             None => return Err(DriverError("expected list".into_string()))
         };
