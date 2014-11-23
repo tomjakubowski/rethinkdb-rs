@@ -1,6 +1,6 @@
 use errors::RdbResult;
 use from_response::FromResponse;
-use net::Response;
+use net::{Connection, Response};
 
 use serialize::json::Json;
 use std::iter::Iterator;
@@ -10,8 +10,10 @@ use std::{slice, vec};
 // will need to implement a moving Iterator directly, but not sure
 // FIXME: could this be parameterized on the type of the document? maybe best to
 // leave that up to users
-pub struct Cursor {
-    docs: Vec<Json>,
+pub struct Cursor<'a> {
+    /// The most recently-received chunk of documents from the conn
+    chunk: Vec<Json>,
+    conn: Option<&'a mut Connection>
 }
 
 pub struct Items<'a> {
@@ -22,31 +24,48 @@ pub struct MoveItems {
     items: vec::MoveItems<Json>
 }
 
-impl FromResponse for Cursor {
-    fn from_response(res: Response) -> RdbResult<Cursor> {
+impl<'a> FromResponse<'a> for Cursor<'a> {
+    fn from_response(res: Response, conn: &'a mut Connection) -> RdbResult<Cursor<'a>> {
         use errors::Error::DriverError;
+        use net::ResponseKind;
 
-        debug!("Response: {}", res.values.to_pretty_str());
-        let docs = match res.values.as_list() {
-            Some(docs) => docs.clone(),
+        debug!("Response: {}", res);
+        let chunk = match res.values.as_list() {
+            Some(chunk) => chunk.clone(),
             None => return Err(DriverError("expected list".into_string()))
         };
-        Ok(Cursor {
-            docs: docs
-        })
+        match res.kind {
+            ResponseKind::Sequence => {
+                Ok(Cursor {
+                    chunk: chunk,
+                    conn: None,
+                })
+            }
+            ResponseKind::Partial => {
+                Ok(Cursor {
+                    chunk: chunk,
+                    conn: Some(conn)
+                })
+            }
+            ResponseKind::Atom => {
+                Err(DriverError("unexpected SUCCESS_ATOM".into_string()))
+            }
+        }
     }
 }
 
-impl Cursor {
+impl<'a> Cursor<'a> {
     pub fn iter(&self) -> Items {
-        Items {
-            items: self.docs.iter()
+        match self.conn {
+            Some(_) => panic!("iterating over partial responses unimplemented"),
+            None => Items { items: self.chunk.iter() }
         }
     }
 
     pub fn into_iter(self) -> MoveItems {
-        MoveItems {
-            items: self.docs.into_iter()
+        match self.conn {
+            Some(_) => panic!("iterating over partial responses unimplemented"),
+            None => MoveItems { items: self.chunk.into_iter() }
         }
     }
 }
@@ -82,23 +101,32 @@ mod test {
         }
     }
 
-    fn fixture() -> Vec<Json> {
+    struct Fixture<'a> {
+        peeps: Vec<Json>,
+        cursor: Cursor<'a>
+    }
+
+    fn fixture_data() -> Vec<Json> {
         vec![Person { name: "bob", age: 23 }.to_json(),
              Person { name: "sally", age: 25 }.to_json()]
+    }
 
+    fn fixture<'a>() -> Fixture<'a> {
+        Fixture {
+            peeps: fixture_data(),
+            cursor: Cursor { chunk: fixture_data(), conn: None }
+        }
     }
 
     #[test]
     fn test_iter() {
-        let cursor = Cursor { docs: fixture() };
-        let peeps = fixture();
-        assert_eq!(peeps, cursor.iter().map(|x| x.clone()).collect())
+        let fix = fixture();
+        assert_eq!(fix.peeps, fix.cursor.iter().map(|x| x.clone()).collect())
     }
 
     #[test]
     fn test_into_iter() {
-        let cursor = Cursor { docs: fixture() };
-        let peeps = fixture();
-        assert_eq!(peeps, cursor.into_iter().collect())
+        let fix = fixture();
+        assert_eq!(fix.peeps, fix.cursor.into_iter().collect())
     }
 }

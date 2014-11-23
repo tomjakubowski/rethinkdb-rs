@@ -38,11 +38,34 @@ pub fn table_list() -> TableList {
     TableList::TableList0
 }
 
+/*
 query! {
     enum Table -> Cursor {
         Table1 { name: String },
         Table2 { db: Db, name: String }
     } ty::TABLE
+}
+*/
+
+// Do this by hand because of the lifetime parameter on Cursor
+pub enum Table {
+    Table1 { name: String },
+    Table2 { db: Db, name: String }
+}
+
+impl ::query::Term for Table {
+    fn args(&self) -> Vec<::serialize::json::Json> {
+        use serialize::json::ToJson;
+        match *self {
+            Table::Table1 { ref name } => vec![name.to_json()],
+            Table::Table2 { ref db, ref name } => vec![db.to_json(), name.to_json()]
+        }
+    }
+}
+
+to_json_impl! { Table ty::TABLE }
+
+impl<'a> ::query::Query<'a, Cursor<'a>> for Table {
 }
 
 pub fn table(name: &str) -> Table {

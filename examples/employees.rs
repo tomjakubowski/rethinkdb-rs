@@ -92,10 +92,15 @@ fn it_stinks(conn: &mut Connection) -> RdbResult<()> {
     let jay = try!(Employee::find_by_id(jay_id.as_slice(), conn));
     println!("Jay Sherman: {}", jay);
 
-    let employees = try!(r::table("employees").run(conn));
-    println!("All employees:\n==============")
-    for x in employees.iter() {
-        println!("{}", x.to_pretty_str());
+    {
+        // FIXME: use a RefCell on Connection's TcpStream so this inner block
+        // isn't needed (would also allow things like inserting documents while
+        // iterating... is that ok?)
+        let employees = try!(r::table("employees").run(conn));
+        println!("All employees:\n==============")
+        for x in employees.iter() {
+            println!("{}", x.to_pretty_str());
+        }
     }
 
     // FIXME: update catchphrase to "Buy my book" + reload

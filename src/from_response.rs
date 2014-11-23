@@ -1,14 +1,14 @@
 use errors::RdbResult;
-use net::{Response, ResponseKind};
+use net::{Connection, Response, ResponseKind};
 use query;
 use serialize::json;
 
-pub trait FromResponse {
-    fn from_response(res: Response) -> RdbResult<Self>;
+pub trait FromResponse<'a> {
+    fn from_response(Response, &'a mut Connection) -> RdbResult<Self>;
 }
 
-impl FromResponse for Vec<String> {
-    fn from_response(res: Response) -> RdbResult<Vec<String>> {
+impl<'a> FromResponse<'a> for Vec<String> {
+    fn from_response(res: Response, _: &'a mut Connection) -> RdbResult<Vec<String>> {
         use errors::Error::DriverError;
 
         match res.kind {
@@ -31,17 +31,15 @@ impl FromResponse for Vec<String> {
     }
 }
 
-impl FromResponse for Response {
-    fn from_response(res: Response) -> RdbResult<Response> { Ok(res) }
+impl<'a> FromResponse<'a> for json::Json {
+    fn from_response(res: Response, _: &mut Connection) -> RdbResult<json::Json> {
+        Ok(res.values)
+    }
 }
 
-impl FromResponse for json::Json {
-    fn from_response(res: Response) -> RdbResult<json::Json> { Ok(res.values) }
-}
-
-impl FromResponse for query::Writes {
+impl<'a> FromResponse<'a> for query::Writes {
     // vvvv this is all very very bad
-    fn from_response(res: Response) -> RdbResult<query::Writes> {
+    fn from_response(res: Response, _: &mut Connection) -> RdbResult<query::Writes> {
         use serialize::Decodable;
         let list = res.values.as_list().unwrap();
         let mut decoder = json::Decoder::new(list[0].clone()); // FIXME
@@ -50,6 +48,6 @@ impl FromResponse for query::Writes {
     }
 }
 
-impl FromResponse for () {
-    fn from_response(_: Response) -> RdbResult<()> { Ok(()) }
+impl<'a> FromResponse<'a> for () {
+    fn from_response(_: Response, _: &mut Connection) -> RdbResult<()> { Ok(()) }
 }

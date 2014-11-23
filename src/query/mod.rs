@@ -20,14 +20,15 @@ pub trait Term {
 
 /// A term which can be executed in RethinkDB as a query.
 /// The input type to this trait will become an output type once a Rust bug is fixed.
-pub trait Query<R: FromResponse>: ToJson + Term {
+pub trait Query<'a, R: FromResponse<'a>>: ToJson + Term {
     /* FIXME: restore this when associated types are less broken rust/#18048
     /// A type which can be decoded from the successful response of executing this query.
     type R: FromResponse;
     */
 
-    fn run(self, conn: &mut net::Connection) -> RdbResult<R> {
-        net::run(conn, self.to_json()).and_then(FromResponse::from_response)
+    fn run(self, conn: &'a mut net::Connection) -> RdbResult<R> {
+        let res = try!(net::run(conn, self.to_json()));
+        FromResponse::from_response(res, conn)
     }
 }
 
@@ -91,7 +92,7 @@ macro_rules! query {
     ($name:ident -> $resp:ty ; $term_ty:expr) => {
         term! { $name ; $term_ty }
 
-        impl ::query::Query<$resp> for $name {
+        impl<'a> ::query::Query<'a, $resp> for $name {
             // type R = $resp;
         }
     };
@@ -100,7 +101,7 @@ macro_rules! query {
     } $term_ty:expr) => {
         term! { $name { $($field: $ty),* } $term_ty }
 
-        impl ::query::Query<$resp> for $name {
+        impl<'a> ::query::Query<'a, $resp> for $name {
             // type R = $resp;
         }
     };
@@ -131,7 +132,7 @@ macro_rules! query {
 
         to_json_impl! { $name $term_ty }
 
-        impl ::query::Query<$resp> for $name {
+        impl<'a> ::query::Query<'a, $resp> for $name {
             // type R = $resp;
         }
     }
