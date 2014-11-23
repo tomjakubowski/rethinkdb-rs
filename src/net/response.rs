@@ -75,24 +75,24 @@ mod test {
     fn test_raw_response_from_json() {
         let json = json::from_str(r#"{"t": 1, "r": [["bar","foo"]]}"#).unwrap();
         let raw_res = RawResponse::from_json(json).unwrap();
-        let tables = json::List(vec![json::String("bar".to_string()),
-                                     json::String("foo".to_string())]);
+        let tables = json::Array(vec![json::String("bar".to_string()),
+                                      json::String("foo".to_string())]);
 
         assert_eq!(raw_res.res_type, 1);
-        assert_eq!(raw_res.res, json::List(vec![tables]));
+        assert_eq!(raw_res.res, json::Array(vec![tables]));
     }
 
     #[test]
     fn test_success_from_json() {
         let json = json::from_str(r#"{"t": 1, "r": [["bar","foo"]]}"#).unwrap();
         let res = Response::from_json(json).unwrap();
-        let tables = json::List(vec![json::String("bar".to_string()),
-                                     json::String("foo".to_string())]);
+        let tables = json::Array(vec![json::String("bar".to_string()),
+                                      json::String("foo".to_string())]);
 
         let Response { kind, values } = res;
 
         assert_eq!(kind, ResponseKind::Atom);
-        assert_eq!(values, json::List(vec![tables]));
+        assert_eq!(values, json::Array(vec![tables]));
     }
 
 }
