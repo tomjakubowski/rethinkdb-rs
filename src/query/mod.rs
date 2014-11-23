@@ -5,6 +5,7 @@ use net;
 use RdbResult;
 
 pub use self::db::{Db, DbCreate, DbDrop, DbList, db, db_create, db_drop, db_list};
+pub use self::expr::{Datum, expr};
 pub use self::table::{Table, TableCreate, TableDrop, TableList, Get};
 pub use self::table::{table, table_create, table_drop, table_list};
 
@@ -140,6 +141,7 @@ macro_rules! query {
 
 pub mod cursor;
 mod db;
+mod expr;
 mod table;
 mod term_type;
 

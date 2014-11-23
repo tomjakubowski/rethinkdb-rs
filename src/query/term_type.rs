@@ -3,6 +3,9 @@ pub type TermType = i64;
 pub const DB: TermType = 14;
 pub const TABLE: TermType = 15;
 pub const GET: TermType = 16;
+
+pub const ADD: TermType = 24;
+
 pub const DELETE: TermType = 54;
 pub const INSERT: TermType = 56;
 pub const DB_CREATE: TermType = 57;
