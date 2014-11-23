@@ -2,20 +2,53 @@ use serialize::json::{Json, ToJson};
 use std::ops;
 use query::term_type as ty;
 
-// NOTE: Would a phantom type on Datum and the other structs in this module
-// improve safety enough to justify the complexity and loss of expressiveness?
-// I think in that case we might need an AnyDatum.
-pub struct Datum(Json);
+// NOTE: Is the phantom type actually useful/helpful outside of toy examples?
+#[deriving(Clone)]
+pub struct Datum<T>(Json);
 
-impl ToJson for Datum {
+impl<T> ToJson for Datum<T> {
     fn to_json(&self) -> Json {
         let Datum(ref j) = *self;
         j.clone()
     }
 }
 
-pub fn expr<T: ToJson>(x: T) -> Datum {
-    Datum(x.to_json())
+#[deriving(Clone)]
+pub struct Num;
+#[deriving(Clone)]
+pub struct String;
+
+pub trait ToDatum<T> for Sized? {
+    fn to_datum(&self) -> Datum<T>;
+}
+
+macro_rules! impl_to_datum {
+    ($ty:ty -> $rty:ty) => {
+        impl ToDatum<$rty> for $ty {
+            fn to_datum(&self) -> Datum<$rty> {
+                Datum(self.to_json())
+            }
+        }
+    };
+}
+
+impl_to_datum! { u8 -> Num }
+impl_to_datum! { i8 -> Num }
+impl_to_datum! { u16 -> Num }
+impl_to_datum! { i16 -> Num }
+impl_to_datum! { u32 -> Num }
+impl_to_datum! { i32 -> Num }
+impl_to_datum! { u64 -> Num }
+impl_to_datum! { i64 -> Num }
+impl_to_datum! { f32 -> Num }
+impl_to_datum! { f64 -> Num }
+
+impl<'a> ToDatum<String> for &'a str {
+    fn to_datum(&self) -> Datum<String> { Datum(self.to_json()) }
+}
+
+pub fn expr<D: ToDatum<T>, T>(x: D) -> Datum<T> {
+    Datum(x.to_datum().to_json())
 }
 
 // We could impl Query here but Datum queries are weird and non-standard e.g.
@@ -26,17 +59,26 @@ pub fn expr<T: ToJson>(x: T) -> Datum {
 // the identity function anyway?
 
 query! {
-    Add -> Json { // NOTE: we know it's Number -> Number or String -> String, so...
-        lhs: Json,
-        rhs: Json
+    enum Add -> Json { // NOTE: we know it's Number -> Number or String -> String, so...
+        Num { lhs: Datum<Num>, rhs: Datum<Num> },
+        String { lhs: Datum<String>, rhs: Datum<String> }
     } ty::ADD
 }
 
-impl<T: ToJson> ops::Add<T, Add> for Datum {
+impl<T: ToDatum<Num>> ops::Add<T, Add> for Datum<Num> {
     fn add(&self, rhs: &T) -> Add {
-        Add {
-            lhs: self.to_json(),
-            rhs: rhs.to_json()
+        Add::Num {
+            lhs: self.clone(),
+            rhs: rhs.to_datum()
+        }
+    }
+}
+
+impl<T: ToDatum<String>> ops::Add<T, Add> for Datum<String> {
+    fn add(&self, rhs: &T) -> Add {
+        Add::String {
+            lhs: self.clone(),
+            rhs: rhs.to_datum()
         }
     }
 }
@@ -50,11 +92,12 @@ mod test {
     fn test_expr() {
         assert_eq!((r::expr(1i32)).to_json(), json!(1));
         assert_eq!((r::expr(1f64)).to_json(), json!(1.0));
-        assert_eq!((r::expr(vec![1i32, 2, 3, 4])).to_json(), json!([1, 2, 3, 4]));
+        assert_eq!((r::expr("foo")).to_json(), json!("foo"));
     }
 
     #[test]
     fn test_ops() {
-        assert_eq!((r::expr(1i32) + 10i32).to_json(), json!([24, [1, 10]]));
+        assert_eq!((r::expr(420i32) + 123i32).to_json(), json!([24, [420, 123]]));
+        assert_eq!((r::expr("foo") + "bar").to_json(), json!([24, ["foo", "bar"]]));
     }
 }
