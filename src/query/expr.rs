@@ -50,6 +50,15 @@ impl<'a> ToDatum<String> for &'a str {
     fn to_datum(&self) -> Datum<String> { Datum(self.to_json()) }
 }
 
+/// Convert a Rust value into a ReQL primitive type.
+///
+/// # Example
+///
+/// ```
+/// use rethinkdb::query as r;
+/// r::expr("12345");
+/// r::expr(12345i32);
+/// ```
 pub fn expr<D: ToDatum<T>, T>(x: D) -> Datum<T> {
     Datum(x.to_datum().to_json())
 }

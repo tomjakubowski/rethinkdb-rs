@@ -12,6 +12,7 @@ query! {
     } ty::TABLE_CREATE
 }
 
+/// Create a new table in the connection's default database.
 pub fn table_create(name: &str) -> TableCreate {
     TableCreate::TableCreate1 { name: name.into_string() }
 }
@@ -23,6 +24,7 @@ query! {
     } ty::TABLE_DROP
 }
 
+/// Delete a table by name in the connection's default database.
 pub fn table_drop(name: &str) -> TableDrop {
     TableDrop::TableDrop1 { name: name.into_string() }
 }
@@ -34,6 +36,7 @@ query! {
     } ty::TABLE_LIST
 }
 
+/// List all tables in the default database.
 pub fn table_list() -> TableList {
     TableList::TableList0
 }
@@ -68,6 +71,10 @@ to_json_impl! { Table ty::TABLE }
 impl<'a> ::query::Query<'a, Cursor<'a>> for Table {
 }
 
+/// Select all documents in a table.  If executed as a query, return a `Cursor`
+/// object which can iterate over all documents in the table.  Can also be
+/// chained with the methods on `Table` to further process data in the table's
+/// documents.
 pub fn table(name: &str) -> Table {
     Table::Table1 { name: name.into_string() }
 }

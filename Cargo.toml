@@ -8,7 +8,7 @@ authors = ["Tom Jakubowski <tom@crystae.net>"]
 
 name = "rethinkdb"
 path = "src/lib.rs"
-doctest = false # FIXME
+doctest = true
 
 [[example]]
 

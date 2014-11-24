@@ -1,18 +1,34 @@
 use super::table::{Table, TableCreate, TableDrop, TableList};
 use super::term_type as ty;
 
+/// Select a database to act on.
 pub fn db(name: &str) -> Db {
     Db { name: name.into_string() }
 }
 
+/// Create a new database.
 pub fn db_create(name: &str) -> DbCreate {
     DbCreate { name: name.into_string() }
 }
 
+/// Delete an existing database.
 pub fn db_drop(name: &str) -> DbDrop {
     DbDrop { name: name.into_string() }
 }
 
+/// List all database names in the system.
+///
+/// # Example
+///
+/// ```no_run
+/// use rethinkdb::query as r;
+/// use rethinkdb::Query;
+/// # let mut conn = rethinkdb::connect("localhost", 1234).unwrap();
+/// let dbs = r::db_list().run(&mut conn).unwrap();
+/// for db in dbs.iter() {
+///     println!("{}", db);
+/// }
+/// ```
 pub fn db_list() -> DbList {
     DbList
 }
